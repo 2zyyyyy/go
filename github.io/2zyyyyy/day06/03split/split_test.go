@@ -17,7 +17,7 @@ func TestSplit01(t *testing.T) { // 测试函数必须以Test开头，必须接�
 
 func TestSplit02(t *testing.T) {
 	got := Split("abcd", "bc")
-	want := []string{"a", "d"}
+	want := []string{"a", "d1"}
 	if !reflect.DeepEqual(want, got) {
 		t.Errorf("excepted:%v, got:%v", want, got)
 	}
