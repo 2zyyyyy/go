@@ -2,7 +2,7 @@ package split
 
 import "strings"
 
-// split package with a single split function.
+// 02split package with a single 02split function.
 
 // Split slices s into all substrings separated by sep and
 // returns a slice of the substrings between those separators.
