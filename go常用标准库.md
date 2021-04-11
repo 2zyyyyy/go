@@ -1114,10 +1114,328 @@ func main() {
   #### 拷贝文件
 
   ```go
+  // 拷贝文件
+  func copyFile() {
+  	// 打开文件
+  	srcFile, err := os.Open("./create.txt")
+  	if err != nil {
+  		fmt.Println(err)
+  		return
+  	}
+  	// 创建新文件
+  	newFile, err2 := os.Create("./copy.txt")
+  	if err2 != nil {
+  		fmt.Println(err2)
+  		return
+  	}
+  	
+  	// defer 关闭文件
+  	defer func(srcFile *os.File) {
+  		err := srcFile.Close()
+  		if err != nil {
+  			fmt.Println(err)
+  		}
+  	}(srcFile)
+  	defer func(newFile *os.File) {
+  		err := newFile.Close()
+  		if err != nil {
+  			fmt.Println(err)
+  		}
+  	}(newFile)
   
+  	// 缓存读取
+  	buf := make([]byte, 1024)
+  	for {
+  		// 从源文件读数据
+  		n, err := srcFile.Read(buf)
+  		if err == io.EOF {
+  			fmt.Println("读取完毕~")
+  			break
+  		}
+  		// 写进去
+  		_, err = newFile.Write(buf[:n])
+  		if err != nil {
+  			return
+  		}
+  	}
+  }
+  ```
+  
+  ##### bufio
+  
+  - bufio包实现了带缓冲区的读写，是对文件读写的封装
+  - bufio缓冲写数据
+  
+  | 模式        | 含义     |
+  | :---------- | :------- |
+  | os.O_WRONLY | 只写     |
+  | os.O_CREATE | 创建文件 |
+  | os.O_RDONLY | 只读     |
+  | os.O_RDWR   | 读写     |
+  | os.O_TRUNC  | 清空     |
+  | os.O_APPEND | 追加     |
+
+- bufio读数据
+
+  ```GO
+  package main
+  
+  import (
+  	"bufio"
+  	"fmt"
+  	"io"
+  	"os"
+  )
+  
+  // bufIo
+  func writeFile() {
+  	// w(写) 2 r(读) 4 x(执行) 1
+  	file, err := os.OpenFile("./bufIo.txt", os.O_CREATE|os.O_WRONLY, 0666)
+  	if err != nil {
+  		fmt.Print("open file failed, err:", err)
+  		return
+  	}
+  	defer func(file *os.File) {
+  		_ = file.Close()
+  	}(file)
+  	// 获取write对象
+  	write := bufio.NewWriter(file)
+  	for i := 0; i < 10; i++ {
+  		_, err = write.WriteString("月满轩尼诗\n")
+  		if err != nil {
+  			return
+  		}
+  	}
+  	// 刷新缓冲区，强制写出
+  	err = write.Flush()
+  	if err != nil {
+  		return
+  	}
+  }
+  
+  func readFile() {
+  	file, err := os.Open("./bufIo.txt")
+  	if err != nil {
+  		fmt.Println("open file failed, err:", err)
+  		return
+  	}
+  	defer func(file *os.File) {
+  		_ = file.Close()
+  	}(file)
+  	reader := bufio.NewReader(file)
+  	for {
+  		line, _, err := reader.ReadLine()
+  		if err == io.EOF {
+  			break
+  		}
+  		if err != nil {
+  			return
+  		}
+  		fmt.Println(string(line))
+  	}
+  }
+  
+  func main() {
+  	writeFile()
+  	readFile()
+  }
   ```
 
+  #### ioutil工具包
+
+  - 工具包写文件
+  - 工具包读取文件
+
+  ```go
+  package main
   
+  import (
+  	"fmt"
+  	"io/ioutil"
+  )
+  
+  func writeFile() {
+  	err := ioutil.WriteFile("./ioUtil.txt", []byte("月满轩尼诗"), 0666)
+  	if err != nil {
+  		fmt.Println("ioUtil write file failed, err:", err)
+  		return
+  	}
+  }
+  
+  func readFile() {
+  	content, err := ioutil.ReadFile("./ioUtil.txt")
+  	if err != nil {
+  		fmt.Println("ioUtil read file failed, err:", err)
+  		return
+  	}
+  	fmt.Println(string(content))
+  }
+  
+  func main() {
+  	writeFile()
+  	readFile()
+  }
+  ```
+
+#### 实例
+
+##### 实现一个cat命令
+
+使用文件操作相关知识，模拟实现Linux的cat命令功能
+
+```GO
+package main
+
+import (
+	"bufio"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+)
+
+// 使用文件操作相关知识，模拟实现linux平台cat命令的功能
+
+// cat命令实现
+func cat(r *bufio.Reader) {
+	for {
+		buf, err := r.ReadBytes('\n') // 注意是字符
+		if err == io.EOF {
+			break
+		}
+		_, err = fmt.Fprintf(os.Stdout, "%s", buf)
+	}
+}
+
+func main() {
+	flag.Parse() // 解析命令行参数
+	if flag.NArg() == 0 {
+		// 如果没有参数默认从标准输入读取内容
+		cat(bufio.NewReader(os.Stdin))
+	}
+	// 依次读取每个指定文件的内容并打印到终端
+	for i := 0; i < flag.NArg(); i++ {
+		f, err := os.Open(flag.Arg(i))
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stdout, "reading from %s failed, err:%v\n", flag.Arg(i), err)
+			continue
+		}
+		cat(bufio.NewReader(f))
+	}
+}
+```
+
+### Strconv
+
+strconv包实现了基本数据类型与其字符串表示的转换，主要有以下常用函数： Atoi()、Itia()、parse系列、format系列、append系列。
+
+更多函数请查看[官方文档](https://golang.org/pkg/strconv/)。
+
+#### string与int类型转换
+
+这一组函数是我们平时编程中用的最多的函数。
+
+#### Atoi()
+
+Atoi()函数用于将字符串类型的整数转换为int类型，函数签名如下：
+
+```go
+func Atoi(s string) (i int, err error)
+```
+
+如果传入的字符串参数无法转换为int类型，就会返回错误。
+
+```go
+// Atoi()如果传入的字符串参数无法转换为int类型，就会返回错误。
+func atoiDemo() {
+	str := "100"
+	i, err := strconv.Atoi(str)
+	if err != nil {
+		fmt.Printf("%s can't convert to int\n", str)
+	} else {
+		fmt.Printf("type：%T\nvalue：%#v\n", i, i) // type: int  value: 100
+	}
+}
+```
+
+输出：
+
+```GO
+$go run .
+type：int value：100
+```
+
+如果我们修改str的值，使得无法转换为int值，再次执行就会返回对应的错误：
+
+```GO
+str := "100测试"
+
+// 输出
+$ go run .
+100测试 can't convert to int
+```
+
+#### Itoa()
+
+Itoa()函数用于将int类型数据转换为对应的字符串表示，具体的函数签名如下。
+
+```go
+func Itoa(i int) string 
+```
+
+示例代码：
+
+```GO
+// Itoa() 数字转字符串
+func itoaDemo() {
+	i := 200
+	str := strconv.Itoa(i)
+	fmt.Printf("type:%T\nvalue:%#v\n", str, str) // type:string  value:"200"
+}
+
+// 输出
+$ go run .
+type:string
+value:"200"
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
