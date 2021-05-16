@@ -4,7 +4,7 @@ package main
 
 import (
 	"fmt"
-	"github.io/2zyyyyy/day05/calc"
+	"go/github.io/2zyyyyy/day05/calc"
 )
 
 var x = 100
