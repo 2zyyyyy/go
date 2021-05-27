@@ -48,11 +48,11 @@ func main() {
 	}
 	fmt.Print("init db success!!\n")
 
-	// queryRow(2)
-	// queryMore(0)
+	queryRow(2)
+	queryMore(0)
 	deleteRow()
 	insertRow()
-	// updateRow()
+	updateRow()
 }
 
 // 查询单条数据
