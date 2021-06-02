@@ -25,19 +25,18 @@ func initDB() (err error) {
 	// 连接数据库
 	db, err = sql.Open("mysql", dsn)
 	if err != nil {
-		return err
+		return
 	}
 	// 尝试与数据库建立连接（校验dsn是否正确）
 	err = db.Ping()
 	if err != nil {
-		return err
+		return
 	}
 	// 设置数据库连接池的最大连接数
 	db.SetMaxOpenConns(10)
-
 	// 设置数据库连接池的最大空闲线程数
 	db.SetMaxOpenConns(5)
-	return nil
+	return
 }
 
 func main() {
@@ -53,6 +52,9 @@ func main() {
 	deleteRow()
 	insertRow()
 	updateRow()
+
+	preparQueryDemo()
+	preparInsertDemo()
 }
 
 // 查询单条数据
