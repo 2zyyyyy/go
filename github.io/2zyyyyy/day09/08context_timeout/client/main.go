@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"sync"
+	"time"
 )
 
 // 客户端
@@ -25,7 +27,7 @@ func doCall(ctx context.Context) {
 	resChan := make(chan *resData, 1)
 	request, err := http.NewRequest("GET", "http://127.0.0.1:8000/", nil)
 	if err != nil {
-		fmt.Println("new request failed, err:%v\n", err)
+		fmt.Printf("new request failed, err:%v\n", err)
 		return
 	}
 	// 使用带超时的ctx创建一个新的client request
@@ -48,16 +50,24 @@ func doCall(ctx context.Context) {
 
 	select {
 	case <-ctx.Done():
-		//transport.CancelRequest(req)
+		//transport.CancelRequest(request)
 		fmt.Println("call api timeout!!!")
 	case result := <-resChan:
 		fmt.Println("call api success~")
 		if result.err != nil {
 			fmt.Printf("call server api failed, err:%v\n", result.err)
+			return
 		}
+		defer result.res.Body.Close()
+		data, _ := ioutil.ReadAll(result.res.Body)
+		fmt.Printf("res:%v\n", string(data))
 	}
 }
 
 func main() {
-
+	// 定义一个100毫秒的超时
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	// 调用cancel释放子goroutine资源
+	defer cancel()
+	doCall(ctx)
 }
