@@ -1,3 +1,4 @@
+// https://github.com/beichensky/Font
 {
   "workbench.colorTheme": "Snazzy Operator",
   "editor.fontFamily": "Operator Mono",
@@ -34,7 +35,7 @@
                     "text.html.basic entity.other.attribute-name",
                     "tag.decorator.js entity.name.tag.js",
                     "tag.decorator.js punctuation.definition.tag.js",
-                    "source.js constant.other.object.key.js string.unquoted.label.js",
+                    "source.js constant.other.object.key.js string.unquoted.label.js"
                 ],
                 "settings": {
                     "fontStyle": ""
