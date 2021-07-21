@@ -13,9 +13,9 @@ func list() {
 }
 
 // 多维数组
-func multidimensional_array() {
+func multidimensionalArray() {
 	// Step 1: 创建数组
-	array := [][]int{}
+	var array [][]int
 
 	// Step 2: 使用 appped() 函数向空的二维数组添加两行一维数组
 	row1 := []int{1, 2, 3}
@@ -32,12 +32,12 @@ func multidimensional_array() {
 }
 
 // 指针
-func pointer_address() {
+func pointerAddress() {
 	a := 10
 	fmt.Printf("变量a的地址：%x\n", &a) // %x 16进制 小写字母
 }
 
-func pointer_output() {
+func pointerOutput() {
 	var ip *int // 声明指针变量
 	a := 10     // 声明实际变量
 
@@ -52,20 +52,20 @@ func pointer_output() {
 	fmt.Printf("*ip变量的值：%d\n", *ip)
 }
 
-func pointer_nil() {
+func pointerNil() {
 	var ptr *int
 	fmt.Printf("ptr的值为：%x\n", ptr)
 }
 
-// struct
+// Books struct
 type Books struct {
 	title   string
 	author  string
 	subject string
-	book_id int
+	bookId  int
 }
 
-func struct_book() {
+func structBook() {
 	// 创建一个新的结构体
 	english1 := Books{
 		"'english book unit 1'",
@@ -80,7 +80,7 @@ func struct_book() {
 		title:   "'english book unit 1'",
 		author:  "2zyyyyy",
 		subject: "English",
-		book_id: 10001,
+		bookId:  10001,
 	}
 	fmt.Println("使用K:V格式创建的结构体：", english2)
 
@@ -92,15 +92,15 @@ func struct_book() {
 	fmt.Println(english3)
 }
 
-// 结构体成员
+// BooksMember 结构体成员
 type BooksMember struct {
 	title   string
 	author  string
 	subject string
-	book_id int
+	bookId  int
 }
 
-func struct_member() {
+func structMember() {
 	var Book1 BooksMember /* 声明 Book1 为 BooksMember 类型 */
 	var Book2 BooksMember /* 声明 Book2 为 BooksMember 类型 */
 
@@ -108,44 +108,44 @@ func struct_member() {
 	Book1.title = "Go 语言"
 	Book1.author = "www.runoob.com"
 	Book1.subject = "Go 语言教程"
-	Book1.book_id = 6495407
+	Book1.bookId = 6495407
 
 	/* book 2 描述 */
 	Book2.title = "Python 教程"
 	Book2.author = "www.runoob.com"
 	Book2.subject = "Python 语言教程"
-	Book2.book_id = 6495700
+	Book2.bookId = 6495700
 
 	/* 打印 Book1 信息 */
 	fmt.Printf("Book 1 title : %s\n", Book1.title)
 	fmt.Printf("Book 1 author : %s\n", Book1.author)
 	fmt.Printf("Book 1 subject : %s\n", Book1.subject)
-	fmt.Printf("Book 1 book_id : %d\n", Book1.book_id)
+	fmt.Printf("Book 1 book_id : %d\n", Book1.bookId)
 
 	/* 打印 Book2 信息 */
 	fmt.Printf("Book 2 title : %s\n", Book2.title)
 	fmt.Printf("Book 2 author : %s\n", Book2.author)
 	fmt.Printf("Book 2 subject : %s\n", Book2.subject)
-	fmt.Printf("Book 2 book_id : %d\n", Book2.book_id)
+	fmt.Printf("Book 2 book_id : %d\n", Book2.bookId)
 }
 
 // 结构体作为函数参数
-func argument_func_struct(books Books) {
+func argumentFuncStruct(books Books) {
 	fmt.Printf("Books title:%v\n", books.title)
 	fmt.Printf("Books author:%v\n", books.author)
 	fmt.Printf("Books subject:%v\n", books.subject)
-	fmt.Printf("Books book_id:%v\n", books.book_id)
+	fmt.Printf("Books book_id:%v\n", books.bookId)
 }
 
-// struct_pointer
-func print_book(book *Books) {
+// structPointer
+func printBook(book *Books) {
 	fmt.Printf("Book title : %s\n", book.title)
 	fmt.Printf("Book author : %s\n", book.author)
 	fmt.Printf("Book subject : %s\n", book.subject)
-	fmt.Printf("Book book_id : %d\n", book.book_id)
+	fmt.Printf("Book book_id : %d\n", book.bookId)
 }
 
-func struct_pointer() {
+func structPointer() {
 	var Book1 Books /* 声明 Book1 为 Books 类型 */
 	var Book2 Books /* 声明 Book2 为 Books 类型 */
 
@@ -153,19 +153,19 @@ func struct_pointer() {
 	Book1.title = "Go 语言"
 	Book1.author = "www.runoob.com"
 	Book1.subject = "Go 语言教程"
-	Book1.book_id = 6495407
+	Book1.bookId = 6495407
 
 	/* book 2 描述 */
 	Book2.title = "Python 教程"
 	Book2.author = "www.runoob.com"
 	Book2.subject = "Python 语言教程"
-	Book2.book_id = 6495700
+	Book2.bookId = 6495700
 
 	/* 打印 Book1 信息 */
-	print_book(&Book1)
+	printBook(&Book1)
 
 	/* 打印 Book2 信息 */
-	print_book(&Book2)
+	printBook(&Book2)
 }
 
 /*
@@ -184,7 +184,7 @@ type Person struct {
 	Time int64  `json:"-"` // 标记忽略该字段
 }
 
-func struct_json() {
+func structJson() {
 	person := Person{
 		18,
 		"大聪明",
@@ -200,20 +200,17 @@ func printSlice(s []int) {
 	fmt.Printf("len=%d cap=%d slice=%v\n", len(s), cap(s), s)
 }
 
-func slice_len_cap() {
+func sliceLenCap() {
 	nums := make([]int, 3, 5)
 	printSlice(nums)
 }
 
-func slice_nil() {
+func sliceNil() {
 	var nums []int
 	printSlice(nums)
-	if nums == nil {
-		fmt.Println("切片是空的")
-	}
 }
 
-func slice_substring() {
+func sliceSubstring() {
 	/* 创建切片 */
 	nums := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
 	printSlice(nums)
@@ -229,19 +226,19 @@ func slice_substring() {
 	// 默认上限weilen(nums)
 	fmt.Println("nums[4:]:", nums[4:])
 
-	nums_one := make([]int, 0, 5)
-	printSlice(nums_one)
+	numsOne := make([]int, 0, 5)
+	printSlice(numsOne)
 
 	// 打印子切片从索引[0, 2)
-	nums_two := nums[:2]
-	printSlice(nums_two)
+	numsTwo := nums[:2]
+	printSlice(numsTwo)
 
 	// 打印索引[0, 2)
-	nums_three := nums[2:5]
-	printSlice(nums_three)
+	numsThree := nums[2:5]
+	printSlice(numsThree)
 }
 
-func slice_append_cppy() {
+func sliceAppendCppy() {
 	var nums []int
 	printSlice(nums)
 
@@ -258,45 +255,45 @@ func slice_append_cppy() {
 	printSlice(nums)
 
 	/* 创建切片 numbers1 是之前切片的两倍容量*/
-	nums_cap_double := make([]int, len(nums), (cap(nums))*2)
+	numsCapDouble := make([]int, len(nums), (cap(nums))*2)
 
 	/* 拷贝 numbers 的内容到 numbers1 */
-	copy(nums_cap_double, nums)
-	printSlice(nums_cap_double)
+	copy(numsCapDouble, nums)
+	printSlice(numsCapDouble)
 }
 
-func slice_cap() {
+func sliceCap() {
 	nums := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	printSlice(nums)
 
 	// 切割slice后获取切片的cap
-	nums_cap := nums[5:8]
-	printSlice(nums_cap) // len=3 cap=5 slice=[6 7 8] capacity 为 7 是因为 number3 的 ptr 指向第三个元素， 后面还剩 2,3,4,5,6,7,8, 所以 cap=7。
+	numsCap := nums[5:8]
+	printSlice(numsCap) // len=3 cap=5 slice=[6 7 8] capacity 为 7 是因为 number3 的 ptr 指向第三个元素， 后面还剩 2,3,4,5,6,7,8, 所以 cap=7。
 }
 
 func main() {
 	list()
-	pointer_address()
-	pointer_output()
-	pointer_nil()
-	struct_book()
-	struct_member()
+	pointerAddress()
+	pointerOutput()
+	pointerNil()
+	structBook()
+	structMember()
 
 	books3 := Books{
 		title:   "'pytest接口自动化测试",
 		author:  "2zyyyyy",
 		subject: "test",
-		book_id: 10086,
+		bookId:  10086,
 	}
-	argument_func_struct(books3)
-	struct_pointer()
-	struct_json()
+	argumentFuncStruct(books3)
+	structPointer()
+	structJson()
 
-	slice_len_cap()
-	slice_nil()
-	slice_substring()
-	slice_append_cppy()
-	slice_cap()
+	sliceLenCap()
+	sliceNil()
+	sliceSubstring()
+	sliceAppendCppy()
+	sliceCap()
 
-	multidimensional_array()
+	multidimensionalArray()
 }
