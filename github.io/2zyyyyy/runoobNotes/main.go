@@ -12,6 +12,25 @@ func list() {
 	fmt.Println(balance)
 }
 
+// 多维数组
+func multidimensional_array() {
+	// Step 1: 创建数组
+	array := [][]int{}
+
+	// Step 2: 使用 appped() 函数向空的二维数组添加两行一维数组
+	row1 := []int{1, 2, 3}
+	row2 := []int{4, 5, 6}
+	array = append(array, row1)
+	array = append(array, row2)
+
+	// Step 3: 打印两行数据
+	fmt.Println("row1:", array[0])
+	fmt.Println("row2:", array[1])
+
+	// Step 4: 访问第最后一个元素
+	fmt.Println(array[1][2])
+}
+
 // 指针
 func pointer_address() {
 	a := 10
@@ -71,7 +90,6 @@ func struct_book() {
 		author: "2zyyyyy",
 	}
 	fmt.Println(english3)
-
 }
 
 // 结构体成员
@@ -178,17 +196,82 @@ func struct_json() {
 }
 
 // 切片（slice）
+func printSlice(s []int) {
+	fmt.Printf("len=%d cap=%d slice=%v\n", len(s), cap(s), s)
+}
+
 func slice_len_cap() {
 	nums := make([]int, 3, 5)
-	fmt.Printf("len=%d cap=%d slice=%v\n", len(nums), cap(nums), nums)
+	printSlice(nums)
 }
 
 func slice_nil() {
 	var nums []int
-	fmt.Printf("len=%d cap=%d slice=%v\n", len(nums), cap(nums), nums)
+	printSlice(nums)
 	if nums == nil {
 		fmt.Println("切片是空的")
 	}
+}
+
+func slice_substring() {
+	/* 创建切片 */
+	nums := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
+	printSlice(nums)
+	// 打印原始切片
+	fmt.Println("nums:", nums)
+
+	// [1, 4]所以1到4(不包含)
+	fmt.Println("nums[1:4]:", nums[1:4])
+
+	// 默认下限为0
+	fmt.Println("nums[:3]:", nums[:3])
+
+	// 默认上限weilen(nums)
+	fmt.Println("nums[4:]:", nums[4:])
+
+	nums_one := make([]int, 0, 5)
+	printSlice(nums_one)
+
+	// 打印子切片从索引[0, 2)
+	nums_two := nums[:2]
+	printSlice(nums_two)
+
+	// 打印索引[0, 2)
+	nums_three := nums[2:5]
+	printSlice(nums_three)
+}
+
+func slice_append_cppy() {
+	var nums []int
+	printSlice(nums)
+
+	/* 允许追加空切片 */
+	nums = append(nums, 0)
+	printSlice(nums)
+
+	/* 向切片添加一个元素 */
+	nums = append(nums, 1)
+	printSlice(nums)
+
+	/* 同时添加多个元素 */
+	nums = append(nums, 2, 3)
+	printSlice(nums)
+
+	/* 创建切片 numbers1 是之前切片的两倍容量*/
+	nums_cap_double := make([]int, len(nums), (cap(nums))*2)
+
+	/* 拷贝 numbers 的内容到 numbers1 */
+	copy(nums_cap_double, nums)
+	printSlice(nums_cap_double)
+}
+
+func slice_cap() {
+	nums := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	printSlice(nums)
+
+	// 切割slice后获取切片的cap
+	nums_cap := nums[5:8]
+	printSlice(nums_cap) // len=3 cap=5 slice=[6 7 8] capacity 为 7 是因为 number3 的 ptr 指向第三个元素， 后面还剩 2,3,4,5,6,7,8, 所以 cap=7。
 }
 
 func main() {
@@ -211,4 +294,9 @@ func main() {
 
 	slice_len_cap()
 	slice_nil()
+	slice_substring()
+	slice_append_cppy()
+	slice_cap()
+
+	multidimensional_array()
 }
