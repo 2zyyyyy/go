@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const MAX int = 3
+
 // 数组
 func list() {
 	balance := [5]float32{1: 2.0, 3: 7.0}
@@ -29,6 +31,61 @@ func multidimensionalArray() {
 
 	// Step 4: 访问第最后一个元素
 	fmt.Println(array[1][2])
+}
+
+func forPrintArray() {
+	/* 数组 - 5 行 2 列*/
+	array := [5][2]int{{0, 0}, {1, 2}, {2, 4}, {3, 6}, {4, 8}}
+
+	/* 输出数组元素 */
+	for i := 0; i < 5; i++ {
+		for j := 0; j < 2; j++ {
+			fmt.Printf("a[%d][%d] = %d\n", i, j, array[i][j])
+		}
+	}
+	// 创建空的二维数组
+	animals := [][]string{}
+
+	// 创建三一维数组，各数组长度不同
+	row1 := []string{"fish", "shark", "eel"}
+	row2 := []string{"bird"}
+	row3 := []string{"lizard", "salamander"}
+
+	// 使用 append() 函数将一维数组添加到二维数组中
+	animals = append(animals, row1)
+	animals = append(animals, row2)
+	animals = append(animals, row3)
+
+	// 循环输出
+	for i := range animals {
+		fmt.Printf("row=%v, animals=%v\n", i, animals[i])
+	}
+}
+
+// 向函数传递数组
+func getAverage(array []int, size int) float32 {
+	var i, sum int
+	var avg float32
+	for i = 0; i < size; i++ {
+		sum += array[i]
+	}
+	avg = float32(sum) / float32(size)
+	return avg
+}
+
+// 指针数组
+func ptrArray() {
+	array := [MAX]int{10, 100, 200}
+	var ptr [MAX]*int
+
+	// 循环赋值(将array的地址赋值给ptr)
+	for i := range array {
+		ptr[i] = &array[i]
+	}
+
+	for i, x := range ptr {
+		fmt.Printf("指针数组：索引:%d 值:%d 值的内存地址:%d\n", i, *x, x)
+	}
 }
 
 // 指针
@@ -296,4 +353,14 @@ func main() {
 	sliceCap()
 
 	multidimensionalArray()
+	forPrintArray()
+
+	/* 数组长度为 5 */
+	array := [5]int{1000, 2, 3, 17, 50}
+
+	/* 数组作为参数传递给函数 */
+	avg := getAverage(array[:], 5)
+	/* 输出返回的平均值 */
+	fmt.Printf("平均值为：%f\n", avg)
+	ptrArray()
 }
