@@ -88,6 +88,26 @@ func ptrArray() {
 	}
 }
 
+// 指向指针的指针
+func ptrPtrValue() {
+	var a int
+	var ptr *int
+	var pptr **int
+
+	a = 3000
+
+	// 指针ptr的地址
+	ptr = &a
+
+	// 指向指针pptr的地址
+	pptr = &ptr
+
+	// 获取pptr(指向指针的指针的值)
+	fmt.Printf("变量a = %d\n", a)
+	fmt.Printf("变量*ptr = %d\n", *ptr)
+	fmt.Printf("变量**ptr = %d\n", *pptr)
+}
+
 // 指针
 func pointerAddress() {
 	a := 10
@@ -363,4 +383,6 @@ func main() {
 	/* 输出返回的平均值 */
 	fmt.Printf("平均值为：%f\n", avg)
 	ptrArray()
+
+	ptrPtrValue()
 }
