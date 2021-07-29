@@ -30,8 +30,6 @@
   intVal :=1 // 这时候会产生编译错误，因为 intVal 已经声明，不需要重新声明
   ```
 
-  
-
 - 变量声明没有初始化默认零值
 
   - 数值类型（包括complex64/128）为 **0**
@@ -139,8 +137,6 @@
       }
   }
   ```
-
-
 
 ### 7、函数
 
@@ -528,8 +524,6 @@ func ptrArray() {
 }
 ```
 
-
-
 ### 14、指向指针的指针
 
 ​	如果一个指针变量存放的又是另一个指针变量的地址，则称这个指针变量为指向指针的指针变量。当定义一个指向指针的指针变量时，第一个指针存放第二个指针的地址，第二个指针存放变量的地址：
@@ -566,11 +560,26 @@ func ptrPtrValue() {
 }
 ```
 
-
-
 ### 15 向函数传递指针参数
 
+​	Go 语言允许向函数传递指针，只需要在函数定义的参数上设置为指针类型即可。以下实例演示了如何向函数传递指针，并在函数调用后修改函数内的值：
 
+```go
+// 向函数传递指针参数
+func swap(x *int, y *int) {
+	*x, *y = *y, *x
+}
+
+func swapExample() {
+	// 定义局部变量
+	var a int = 100
+	var b int = 200
+
+	swap(&a, &b)
+	fmt.Printf("交换后 a 的值 : %d\n", a)
+	fmt.Printf("交换后 b 的值 : %d\n", b)
+}
+```
 
 ### 16、结构体
 
@@ -774,9 +783,7 @@ func ptrPtrValue() {
 
   当要将结构体对象转换为 JSON 时，对象中的属性首字母必须是大写，才能正常转换为 JSON。
 
-
-
-### 14、切片（Slice）
+### 17、切片（Slice）
 
 ​	Go 语言切片是对数组的抽象。
 
@@ -924,4 +931,42 @@ func ptrPtrValue() {
   }
   ```
 
+  ### 18、范围（Range）
+
+  ​	Go 语言中 range 关键字用于 for 循环中迭代数组(array)、切片(slice)、通道(channel)或集合(map)的元素。在数组和切片中它返回元素的索引和索引对应的值，在集合中返回 key-value 对。
+
+  ```go
+  // range
+  func goRange() {
+  	nums := []int{1, 3, 5, 7, 9}
+  	sum := 0
+  	for _, num := range nums {
+  		fmt.Println(sum)
+  		sum += num
+  	}
+  	fmt.Printf("sum = %d\n", sum)
   
+  	//在数组上使用range将传入index和值两个变量。上面那个例子我们不需要使用该元素的序号
+  	//所以我们使用空白符"_"省略了。有时侯我们确实需要知道它的索引。
+  	for i, num := range nums {
+  		fmt.Printf("index = %d, num = %d\n", i, num)
+  	}
+  
+  	//range也可以用在map的键值对上。
+  	maps := map[string]string{"a": "apple", "b": "banana"}
+  	for k, v := range maps {
+  		fmt.Printf("key = %s, value = %s\n", k, v)
+  	}
+  
+  	//range也可以用来枚举Unicode字符串。第一个参数是字符的索引，第二个是字符（Unicode的值）本身。
+  	for i, c := range "go" {
+  		fmt.Println(i, c)
+  	}
+  
+  	// 通过 range 获取参数列表:
+  	fmt.Println(len(os.Args))
+  	for _, arg := range os.Args {
+  		fmt.Println(arg)
+  	}
+  }
+  ```

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -106,6 +107,21 @@ func ptrPtrValue() {
 	fmt.Printf("变量a = %d\n", a)
 	fmt.Printf("变量*ptr = %d\n", *ptr)
 	fmt.Printf("变量**ptr = %d\n", *pptr)
+}
+
+// 向函数传递指针参数
+func swap(x *int, y *int) {
+	*x, *y = *y, *x
+}
+
+func swapExample() {
+	// 定义局部变量
+	var a int = 100
+	var b int = 200
+
+	swap(&a, &b)
+	fmt.Printf("交换后 a 的值 : %d\n", a)
+	fmt.Printf("交换后 b 的值 : %d\n", b)
 }
 
 // 指针
@@ -315,7 +331,7 @@ func sliceSubstring() {
 	printSlice(numsThree)
 }
 
-func sliceAppendCppy() {
+func sliceAppendCopy() {
 	var nums []int
 	printSlice(nums)
 
@@ -348,6 +364,40 @@ func sliceCap() {
 	printSlice(numsCap) // len=3 cap=5 slice=[6 7 8] capacity 为 7 是因为 number3 的 ptr 指向第三个元素， 后面还剩 2,3,4,5,6,7,8, 所以 cap=7。
 }
 
+// range
+func goRange() {
+	nums := []int{1, 3, 5, 7, 9}
+	sum := 0
+	for _, num := range nums {
+		fmt.Println(sum)
+		sum += num
+	}
+	fmt.Printf("sum = %d\n", sum)
+
+	//在数组上使用range将传入index和值两个变量。上面那个例子我们不需要使用该元素的序号
+	//所以我们使用空白符"_"省略了。有时侯我们确实需要知道它的索引。
+	for i, num := range nums {
+		fmt.Printf("index = %d, num = %d\n", i, num)
+	}
+
+	//range也可以用在map的键值对上。
+	maps := map[string]string{"a": "apple", "b": "banana"}
+	for k, v := range maps {
+		fmt.Printf("key = %s, value = %s\n", k, v)
+	}
+
+	//range也可以用来枚举Unicode字符串。第一个参数是字符的索引，第二个是字符（Unicode的值）本身。
+	for i, c := range "go" {
+		fmt.Println(i, c)
+	}
+
+	// 通过 range 获取参数列表:
+	fmt.Println(len(os.Args))
+	for _, arg := range os.Args {
+		fmt.Println(arg)
+	}
+}
+
 func main() {
 	list()
 	pointerAddress()
@@ -369,7 +419,7 @@ func main() {
 	sliceLenCap()
 	sliceNil()
 	sliceSubstring()
-	sliceAppendCppy()
+	sliceAppendCopy()
 	sliceCap()
 
 	multidimensionalArray()
@@ -385,4 +435,8 @@ func main() {
 	ptrArray()
 
 	ptrPtrValue()
+
+	swapExample()
+
+	goRange()
 }
