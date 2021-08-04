@@ -970,3 +970,335 @@ func swapExample() {
   	}
   }
   ```
+
+### 18、Map(集合)
+
+​	Map 是一种无序的键值对的集合。Map 最重要的一点是通过 key 来快速检索数据，key 类似于索引，指向数据的值。
+
+​	Map 是一种集合，所以我们可以像迭代数组和切片那样迭代它。不过，Map 是无序的，我们无法决定它的返回顺序，这是因为 Map 是使用 hash 表来实现的。
+
+- 定义Map
+
+  可以使用内建函数make也可以使用map关键字来定义map：
+
+  ```go
+  /* 声明变量，默认 map 是 nil */
+  var map_variable map[key_type]value_type
+  
+  /* 使用 make 函数 */
+  map_vaiiable := make(map[key_type]value_type)
+  ```
+
+  如果不初始化map，那么就会创建一个nil map。nil map不能用来存放键值对
+
+  实例：
+
+  ```go
+  // 创建和使用map
+  // map
+  func mapExample() {
+  	countryCapitalMap := make(map[string]string)
+  	/* map插入key - value对,各个国家对应的首都 */
+  	countryCapitalMap["France"] = "巴黎"
+  	countryCapitalMap["Italy"] = "罗马"
+  	countryCapitalMap["Japan"] = "东京"
+  	countryCapitalMap["India "] = "新德里"
+  
+  	/*使用键输出地图值 */
+  	for country := range countryCapitalMap {
+  		fmt.Println(country, "的首都是", countryCapitalMap[country])
+  	}
+  
+  	/*查看元素在集合中是否存在 */
+  	capital, ok := countryCapitalMap["American"]
+  	if ok {
+  		fmt.Println("American的首都是", capital)
+  	} else {
+  		fmt.Println("American的首都不存在")
+  	}
+  }
+  ```
+
+- delete()函数
+
+  delete()函数用于删除集合的元素，参数为map和其对因的key。实例如下
+
+  ```go
+  // map delete
+  func mapDelete() {
+  	/* 创建map */
+  	countryCapitalMap := map[string]string{"France": "Paris", "Italy": "Rome", "Japan": "Tokyo", "India": "New delhi"}
+  	fmt.Println("原始地图")
+  	/* 打印地图 */
+  	for country := range countryCapitalMap {
+  		fmt.Println(country, "首都是", countryCapitalMap[country])
+  	}
+  	/*删除元素*/
+  	delete(countryCapitalMap, "France")
+  	fmt.Println("法国条目被删除")
+  	fmt.Println("删除元素后地图")
+  
+  	/*打印地图*/
+  	for country := range countryCapitalMap {
+  		fmt.Println(country, "首都是", countryCapitalMap[country])
+  	}
+  }
+  ```
+
+### 19、递归函数
+
+​	递归，就是在运行过程中掉用自己，例：
+
+```go
+func recursion() {
+  recursion() // 函数中调用自己
+}
+
+func main() {
+  recursion()
+}
+```
+
+​	go语言支持递归。但我们在使用递归时，开发者需要设置退出条件，否则递归将陷入无限循环中。
+
+​	递归函数对于解决数学上的问题是非常有用的，就像计算阶乘，生产斐波那契数列等。
+
+- 阶乘
+
+  以下实例通过go语言的递归函数实现阶乘：
+
+  ```go
+  // 递归函数-阶乘（n!=(n-1)! * n）
+  func factorial(n uint64) (res uint64) {
+  	if n > 0 {
+  		res = n * factorial(n-1)
+  		return res
+  	}
+  	return 1 // 0! = 1
+  }
+  
+  func main() {
+    i := 5
+  	fmt.Printf("%d的阶乘是：%d\n", i, factorial(uint64(i)))
+  }
+  ```
+
+- 斐波那切数列
+
+  以下实例通过 Go 语言的递归函数实现斐波那契数列：
+
+  ```go
+  // 斐波那契数列(F(0)=0，F(1)=1, F(n)=F(n - 1)+F(n - 2)（n ≥ 2，n ∈ N*）)
+  func fibonacci(n int) int {
+  	if n < 2 {
+  		return n
+  	}
+  	return fibonacci(n-2) + fibonacci(n-1)
+  }
+  
+  func main() {
+    // 斐波那契数列
+  	for i := 0; i < 10; i++ {
+  		fmt.Printf("%d \t", fibonacci(i))
+  	}
+  }
+  ```
+
+### 20、类型转换
+
+​	类型转换用于将一种数据类型的变量转换为另外一种类型的变量。Go 语言类型转换基本格式如下：
+
+```go
+type_name(expression) // type_name为类型，expression为表达式。
+```
+
+- 以下实例中将整型转化为浮点型，并计算结果，将结果赋值给浮点型变量：
+
+  ```go
+  // 类型转换
+  func typeConversion() {
+  	var sum int = 17
+  	var count int = 5
+  
+  	mean := float32(sum) / float32(count)
+  	fmt.Printf("mean 的值为: %f\n", mean)
+  }
+  ```
+
+- go 不支持隐式转换类型，比如 :
+
+  ```go
+  func main() {  
+      var a int64 = 3
+      var b int32
+      b = a
+      fmt.Printf("b 为 : %d", b)
+  }
+  
+  // 此时会报错
+  cannot use a (type int64) as type int32 in assignment
+  cannot use b (type int32) as type string in argument to fmt.Printf
+  
+  // 需要改成
+  b = int32(a)
+  ```
+
+### 21、接口（interface）
+
+​	Go 语言提供了另外一种数据类型即接口，它把所有的具有共性的方法定义在一起，任何其他类型只要实现了这些方法就是实现了这个接口。示例：
+
+```go
+// 定义接口
+type interface_name interface {
+  method_name1 [return_type]
+  method_name2 [return_type]
+  method_name3 [return_type]
+  ...
+  method_namen [return_type]
+}
+
+// 定义结构体
+type struct_name struct {
+  // variable
+}
+
+// 实现接口方法
+func (struct_name_variable struct_name) method_name1() [return_type] {
+  // 方法实现
+}
+...
+func (struct_name_variable struct_name) method_namen() [return_type] {
+   /* 方法实现*/
+}
+```
+
+实例：
+
+```go
+// 接口（interface）
+/*
+	1 定义接口
+	2 定义结构体
+	3 实现接口方法
+		3.1 方法实现
+*/
+type Phone interface {
+	call()
+}
+
+type NokiaPhone struct {
+}
+
+func (NokiaPhone NokiaPhone) call() {
+	fmt.Println("I am Nokia, I can call you!")
+}
+
+type IPhone struct {
+}
+
+func (IPhone IPhone) call() {
+	fmt.Println("I am IPhone, I can call you!")
+}
+
+func main() {
+  var phone Phone
+	phone = new(NokiaPhone)
+	phone.call()
+
+	phone = new(IPhone)
+	phone.call()
+}
+```
+
+### 22、错误处理
+
+​	Go 语言通过内置的错误接口提供了非常简单的错误处理机制。
+
+​	error类型是一个接口类型，这是它的定义：
+
+```go
+type error interface {
+  Error() string
+}
+```
+
+​	我们可以在编码中通过实现 error 接口类型来生成错误信息。
+
+​	函数通常在最后的返回值中返回错误信息。使用errors.New 可返回一个错误信息：
+
+```go
+func Sqrt(f float64) (float64, error) {
+    if f < 0 {
+        return 0, errors.New("math: square root of negative number")
+    }
+    // 实现
+}
+```
+
+​	在下面的例子中，我们在调用Sqrt的时候传递的一个负数，然后就得到了non-nil的error对象，将此对象与nil比较，结果为true，所以fmt.Println(fmt包在处理error时会调用Error方法)被调用，以输出错误，请看下面调用的示例代码：
+
+```go
+result, err:= Sqrt(-1)
+
+if err != nil {
+   fmt.Println(err)
+}
+```
+
+- 实例
+
+  ```go
+  // 错误处理
+  type DIV_ERR struct {
+  	etype int // 错误类型
+  	v1    int // 记录下出错时的除数、被除数
+  	v2    int
+  }
+  
+  // 实现接口方法 error.Error()
+  func (div_err DIV_ERR) Error() string {
+  	if div_err.etype == 0 {
+  		return "除零错误"
+  	} else {
+  		return "未知错误"
+  	}
+  }
+  
+  // 除法
+  func division(a, b int) (int, *DIV_ERR) {
+  	if b == 0 {
+  		// 返回错误信息
+  		return 0, &DIV_ERR{0, a, b}
+  	} else {
+  		// 返回正常结果
+  		return a / b, nil
+  	}
+  }
+  
+  func main() {
+    // 正确调用
+  	res, err := division(100, 2)
+  	if err != nil {
+  		fmt.Println("(1)failed,", err)
+  	} else {
+  		fmt.Println("(1)success, 100/2 = ", res)
+  	}
+  
+  	// 错误调用
+  	res, err = division(100, 0)
+  	if err != nil {
+  		fmt.Println("(2)failed, ", err)
+  	} else {
+  		fmt.Println("(2)success, 100/0 = ", res)
+  	}
+  }
+  ```
+
+- panic与recover
+
+  panic 与 recover 是 Go 的两个内置函数，这两个内置函数用于处理 Go 运行时的错误，panic 用于主动抛出错误，recover 用来捕获 panic 抛出的错误。
+
+  - 引发panic有两种情况，一是程序主动调用，二是程序产生运行时错误，由运行时检测并退出。
+  - 发生panic后，程序会从调用panic的函数位置或发生panic的地方立即返回，逐层向上执行函数的defer语句，然后逐层打印函数调用堆栈，直到被recover捕获或运行到最外层函数。
+  - panic不但可以在函数正常流程中抛出，在defer逻辑里也可以再次调用panic或抛出panic。defer里面的panic能够被后续执行的defer捕获。
+  - recover用来捕获panic，阻止panic继续向上传递。recover()和defer一起使用，但是defer只有在后面的函数体内直接被掉用才能捕获panic来终止异常，否则返回nil，异常继续向外传递。

@@ -398,6 +398,127 @@ func goRange() {
 	}
 }
 
+// map
+func mapExample() {
+	countryCapitalMap := make(map[string]string)
+	/* map插入key - value对,各个国家对应的首都 */
+	countryCapitalMap["France"] = "巴黎"
+	countryCapitalMap["Italy"] = "罗马"
+	countryCapitalMap["Japan"] = "东京"
+	countryCapitalMap["India "] = "新德里"
+
+	/*使用键输出地图值 */
+	for country := range countryCapitalMap {
+		fmt.Println(country, "的首都是", countryCapitalMap[country])
+	}
+
+	/*查看元素在集合中是否存在 */
+	capital, ok := countryCapitalMap["American"]
+	if ok {
+		fmt.Println("American的首都是", capital)
+	} else {
+		fmt.Println("American的首都不存在")
+	}
+}
+
+// map delete
+func mapDelete() {
+	/* 创建map */
+	countryCapitalMap := map[string]string{"France": "Paris", "Italy": "Rome", "Japan": "Tokyo", "India": "New delhi"}
+	fmt.Println("原始地图")
+	/* 打印地图 */
+	for country := range countryCapitalMap {
+		fmt.Println(country, "首都是", countryCapitalMap[country])
+	}
+	/*删除元素*/
+	delete(countryCapitalMap, "France")
+	fmt.Println("法国条目被删除")
+	fmt.Println("删除元素后地图")
+
+	/*打印地图*/
+	for country := range countryCapitalMap {
+		fmt.Println(country, "首都是", countryCapitalMap[country])
+	}
+}
+
+// 递归函数-阶乘（n!=(n-1)! * n）
+func factorial(n uint64) (res uint64) {
+	if n > 0 {
+		res = n * factorial(n-1)
+		return res
+	}
+	return 1 // 0! = 1
+}
+
+// 斐波那契数列(F(0)=0，F(1)=1, F(n)=F(n - 1)+F(n - 2)（n ≥ 2，n ∈ N*）)
+func fibonacci(n int) int {
+	if n < 2 {
+		return n
+	}
+	return fibonacci(n-2) + fibonacci(n-1)
+}
+
+// 类型转换
+func typeConversion() {
+	var sum int = 17
+	var count int = 5
+
+	mean := float32(sum) / float32(count)
+	fmt.Printf("mean 的值为: %f\n", mean)
+}
+
+// 接口（interface）
+/*
+	1 定义接口
+	2 定义结构体
+	3 实现接口方法
+		3.1 方法实现
+*/
+type Phone interface {
+	call()
+}
+
+type NokiaPhone struct {
+}
+
+func (NokiaPhone NokiaPhone) call() {
+	fmt.Println("I am Nokia, I can call you!")
+}
+
+type IPhone struct {
+}
+
+func (IPhone IPhone) call() {
+	fmt.Println("I am IPhone, I can call you!")
+}
+
+// 错误处理
+type DIV_ERR struct {
+	etype int // 错误类型
+	v1    int // 记录下出错时的除数、被除数
+	v2    int
+}
+
+// 实现接口方法 error.Error()
+func (div_err DIV_ERR) Error() string {
+	if div_err.etype == 0 {
+		return "除零错误"
+	} else {
+		return "未知错误"
+	}
+}
+
+// 除法
+func division(a, b int) (int, *DIV_ERR) {
+	if b == 0 {
+		// 返回错误信息
+		return 0, &DIV_ERR{0, a, b}
+	} else {
+		// 返回正常结果
+		return a / b, nil
+	}
+}
+
 func main() {
 	list()
 	pointerAddress()
@@ -439,4 +560,40 @@ func main() {
 	swapExample()
 
 	goRange()
+
+	mapExample()
+	mapDelete()
+
+	// 阶乘
+	n := 10
+	fmt.Printf("%d的阶乘是：%d\n", n, factorial(uint64(n)))
+	// 斐波那契数列
+	for i := 0; i < 10; i++ {
+		fmt.Printf("%d \t", fibonacci(i))
+	}
+
+	typeConversion()
+
+	var phone Phone
+	phone = new(NokiaPhone)
+	phone.call()
+
+	phone = new(IPhone)
+	phone.call()
+
+	// 正确调用
+	res, err := division(100, 2)
+	if err != nil {
+		fmt.Println("(1)failed,", err)
+	} else {
+		fmt.Println("(1)success, 100/2 = ", res)
+	}
+
+	// 错误调用
+	res, err = division(100, 0)
+	if err != nil {
+		fmt.Println("(2)failed, ", err)
+	} else {
+		fmt.Println("(2)success, 100/0 = ", res)
+	}
 }
