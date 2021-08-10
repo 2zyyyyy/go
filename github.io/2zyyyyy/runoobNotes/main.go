@@ -519,6 +519,37 @@ func division(a, b int) (int, *DIV_ERR) {
 	}
 }
 
+// go并发
+func flashSale(s string) {
+	for i := 0; i < 5; i++ {
+		time.Sleep(time.Millisecond * 100)
+		fmt.Println(s)
+	}
+}
+
+// channel
+func sum(s []int, ch chan int) {
+	sum := 0
+	for i, v := range s {
+		fmt.Printf("i=%d, v=%d, sum=%d\n", i, v, sum)
+		sum += v
+	}
+	ch <- sum
+}
+
+// channel 缓存
+func chanCache() {
+	// 定义缓冲为2的可以存储整数类型的通道
+	chanChe := make(chan int, 2)
+
+	// 因为chanChe是带缓冲的通道，我们可以同时发送两个数据,而不用立刻需要去同步读取数据
+	chanChe <- 1
+	chanChe <- 2
+
+	// 获取这两个数据
+	fmt.Printf("chan1 = %d, chan2 = %d\n", <-chanChe, <-chanChe)
+}
+
 func main() {
 	list()
 	pointerAddress()
@@ -596,4 +627,19 @@ func main() {
 	} else {
 		fmt.Println("(2)success, 100/0 = ", res)
 	}
+
+	// 并发
+	go flashSale("(1)goroutine begin~")
+	flashSale("(2)goroutine begin~")
+
+	// channel
+	s := []int{7, 2, 8, -9, 4, 0}
+	ch := make(chan int)
+	go sum(s[:len(s)/2], ch)
+	go sum(s[len(s)/2:], ch)
+
+	x, y := <-ch, <-ch
+	fmt.Printf("x = %d, y = %d, x+y = %d\n", x, y, x+y)
+
+	chanCache()
 }
