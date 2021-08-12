@@ -1302,3 +1302,268 @@ if err != nil {
   - 发生panic后，程序会从调用panic的函数位置或发生panic的地方立即返回，逐层向上执行函数的defer语句，然后逐层打印函数调用堆栈，直到被recover捕获或运行到最外层函数。
   - panic不但可以在函数正常流程中抛出，在defer逻辑里也可以再次调用panic或抛出panic。defer里面的panic能够被后续执行的defer捕获。
   - recover用来捕获panic，阻止panic继续向上传递。recover()和defer一起使用，但是defer只有在后面的函数体内直接被掉用才能捕获panic来终止异常，否则返回nil，异常继续向外传递。
+
+- 例子1：
+
+  ```go
+  //以下捕获失败
+  defer recover()
+  defer fmt.Println(recover)
+  
+  defer func() {
+    fun(){
+      recover() //无效，嵌套两层
+    }()
+  }()
+  
+  //以下捕获有效
+  defer func(){
+      recover()
+  }()
+  
+  func except(){
+      recover()
+  }
+  func test(){
+      defer except()
+      panic("runtime error")
+  }
+  ```
+
+- 例子2（多个panic只会捕捉最后一个）：
+
+  ```go
+  func main(){
+      defer func(){
+          if err := recover() ; err != nil {
+              fmt.Println(err)
+          }
+      }()
+      defer func(){
+          panic("three")
+      }()
+      defer func(){
+          panic("two")
+      }()
+      panic("one")
+  }
+  ```
+
+- 个人多次试验，总结几点 panic，defer 和 recover
+
+  - 1、panic 在没有用 recover 前以及在 recover 捕获那一级函数栈，panic 之后的代码均不会执行；一旦被 recover 捕获后，外层的函数栈代码恢复正常，所有代码均会得到执行；
+
+  -  2、panic 后，不再执行后面的代码，立即按照逆序执行 defer，并逐级往外层函数栈扩散；defer 就类似 finally；
+
+  -  3、利用 recover 捕获 panic 时，defer 需要再 panic 之前声明，否则由于 panic 之后的代码得不到执行，因此也无法 recover；
+
+    ```go
+    func main() {
+      fmt.Println("外层开始")
+      defer func() {
+        fmt.Println("外层准备recover")
+        if err := recover(); err != nil {
+          fmt.Printf("%#v-%#v\n", "外层", err) // err已经在上一级的函数中捕获了，这里没有异常，只是例行先执行defer，然后执行后面的代码
+        } else {
+          fmt.Println("外层没做啥事")
+        }
+        fmt.Println("外层完成recover")
+      }()
+      fmt.Println("外层即将异常")
+      f()
+      fmt.Println("外层异常后")
+      defer func() {
+        fmt.Println("外层异常后defer")
+      }()
+    }
+    
+    func f() {
+      fmt.Println("内层开始")
+      defer func() {
+        fmt.Println("内层recover前的defer")
+      }()
+    
+      defer func() {
+        fmt.Println("内层准备recover")
+        if err := recover(); err != nil {
+          fmt.Printf("%#v-%#v\n", "内层", err) // 这里err就是panic传入的内容
+        }
+    
+        fmt.Println("内层完成recover")
+      }()
+    
+      defer func() {
+        fmt.Println("内层异常前recover后的defer")
+      }()
+    
+      panic("异常信息")
+    
+      defer func() {
+        fmt.Println("内层异常后的defer")
+      }()
+    
+      fmt.Println("内层异常后语句") //recover捕获的一级或者完全不捕获这里开始下面代码不会再执行
+    }
+    ```
+
+### 23、并发
+
+​	Go 语言支持并发，我们只需要通过 go 关键字来开启 goroutine 即可。goroutine 是轻量级线程，goroutine 的调度是由 Golang 运行时进行管理的。goroutine 语法格式：
+
+```go
+go 函数名(参数列表) 
+// 例如
+go f(x, y, z)
+```
+
+​	开启一个新的goroutine：
+
+```go
+f(x, y, z)
+```
+
+​	Go 允许使用 go 语句开启一个新的运行期线程， 即 goroutine，以一个不同的、新创建的 goroutine 来执行一个函数。 同一个程序中的所有 goroutine 共享同一个地址空间。
+
+```go
+// go并发
+func flashSale(s string) {
+	for i := 0; i < 5; i++ {
+		time.Sleep(time.Millisecond * 100)
+		fmt.Println(s)
+	}
+}
+
+func main() {
+	go flashSale("(1)goroutine begin~")
+	flashSale("(2)goroutine begin~")
+}
+```
+
+​	执行以上代码，你会看到输出的 hello 和 world 是没有固定先后顺序。因为它们是两个 goroutine 在执行：
+
+![image-20210805170912886](https://tva1.sinaimg.cn/large/008i3skNly1gt60z0wbptj308q07sdgd.jpg)
+
+- 通道（channel）
+
+  通道（channel）是用来传递数据的一个数据结构。
+
+  通道可用于两个 goroutine 之间通过传递一个指定类型的值来同步运行和通讯。操作符 `<-` 用于指定通道的方向，发送或接收。如果未指定方向，则为双向通道。
+
+  ```go
+  ch <- // 把 V 发送到通道 ch
+  v := <- ch // 从 ch 接收数据 并把值赋给 V
+  ```
+
+  声明一个通道很简单，我们使用chan关键字即可，通道在使用前必须先创建：
+
+  ```go
+  ch := make(chan int)
+  ```
+
+  **注意**：默认情况下，通道是不带缓冲区的。发送端发送数据，同时必须有接收端相应的接收数据。
+
+  以下实例通过两个 goroutine 来计算数字之和，在 goroutine 完成计算后，它会计算两个结果的和：
+
+  ```go
+  func sum(s []int, c chan int) {
+    sum := 0
+    for _, v range s {
+      sum += v
+    }
+    c <- sum // 把sum发送到通道c
+  }
+  
+  func main() {
+    s := []int{7, 2, 8, -9, 4, 0}
+    
+    c := make(chan int) 
+    go sum(s[:len(s)/2], c)
+    go sum(s[len(s)/2:], c)
+    
+    x, y := <-c, <-c
+    fmt.Println(x, y, x+y)
+  }
+  ```
+
+- 通道缓冲区
+
+  通道可以设置缓冲区，通过make的第二个参数指定缓冲区大小：
+
+  ```go
+  ch := make(chan int, 100)
+  ```
+
+  ​	带缓冲区的通道允许发送端的数据发送和接收端的数据处于异步状态，就是说发送端发送的数据可以放在缓冲区里面，可以等待待接收端去获取数据，而不是立即需要接收端去获取数据。
+
+  ​	不过由于缓冲区的大小是有限的，所以还是必须有接收端来接收数据的，否则缓冲区一满，数据发送端就无法在发送数据了。
+
+  **注意**：如果通道不带缓冲，发送方会阻塞知道对方从通道中接收了值。如果通道带缓冲，发送发则会阻塞知道发送的值被拷贝到缓冲区内；如果缓冲区已满，则意味着需要等待知道某个接收方获取到一个值。接收方在有值可以接收之前会一直阻塞。
+
+  - 实例
+
+    ```go
+    // channel 缓存
+    func chanCache() {
+    	// 定义缓冲为2的可以存储整数类型的通道
+    	chanChe := make(chan int, 2)
+    
+    	// 因为chanChe是带缓冲的通道，我们可以同时发送两个数据,而不用立刻需要去同步读取数据
+    	chanChe <- 1
+    	chanChe <- 2
+    
+    	// 获取这两个数据
+    	fmt.Printf("chan1 = %d, chan2 = %d\n", <-chanChe, <-chanChe)
+    }
+    
+    func main() {
+      chanCacha()
+    }
+    ```
+
+  - 关于缓冲区拓展
+
+    无缓冲是同步的，例如 **make(chan int)**，就是一个送信人去你家门口送信，你不在家他不走，你一定要接下信，他才会走，无缓冲保证信能到你手上。
+
+    有缓冲是异步的，例如 **make(chan int, 1)**，就是一个送信人去你家仍到你家的信箱，转身就走，除非你的信箱满了，他必须等信箱空下来，有缓冲的保证信能进你家的邮箱。
+
+- Go 遍历通道与关闭通道
+
+  ​	Go通过range关键字来实现遍历读取到的数据，类似于数组或切片。格式如下
+
+  ```go
+  v, ok := <- ch
+  ```
+
+  ​	如果通道接收不到数据OK就为false，此时通道就可以使用close（）函数来关闭。实例：
+
+  ```go
+  // channel close()
+  func chanClose(n int, ch chan int) {
+  	x, y := 0, 1
+  	for i := 0; i < n; i++ {
+  		ch <- x
+  		x, y = y, x+y
+  	}
+  	close(ch)
+  }
+  
+  func main() {
+    	// close
+  	ch2 := make(chan int, 10)
+  	fmt.Printf("cap(ch2) = %d\n", cap(ch2))
+  	go chanClose(cap(ch2), ch2)
+  	/*range 函数遍历每个从通道接收到的数据，因为 c 在发送完 10 个
+  	数据之后就关闭了通道，所以这里我们 range 函数在接收到 10 个数据
+  	之后就结束了。如果上面的 c 通道不关闭，那么 range 函数就不
+  	会结束，从而在接收第 11 个数据的时候就阻塞了。*/
+  	for i := range ch2 {
+  		fmt.Println(i)
+  	}
+  }
+  ```
+
+- channel控制读写权限
+
+  - 读写：`go func(ch chan int){}`
+  - 只读：`go func(ch <-chan int) {}`
+  - 只写：`go func(ch chan <- int) {}`

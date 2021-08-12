@@ -45,7 +45,7 @@ func forPrintArray() {
 		}
 	}
 	// 创建空的二维数组
-	animals := [][]string{}
+	var animals [][]string
 
 	// 创建三一维数组，各数组长度不同
 	row1 := []string{"fish", "shark", "eel"}
@@ -116,8 +116,7 @@ func swap(x *int, y *int) {
 
 func swapExample() {
 	// 定义局部变量
-	var a int = 100
-	var b int = 200
+	var a, b = 100, 200
 
 	swap(&a, &b)
 	fmt.Printf("交换后 a 的值 : %d\n", a)
@@ -460,8 +459,8 @@ func fibonacci(n int) int {
 
 // 类型转换
 func typeConversion() {
-	var sum int = 17
-	var count int = 5
+	var sum = 17
+	var count = 5
 
 	mean := float32(sum) / float32(count)
 	fmt.Printf("mean 的值为: %f\n", mean)
@@ -493,15 +492,15 @@ func (IPhone IPhone) call() {
 }
 
 // 错误处理
-type DIV_ERR struct {
+type DivErr struct {
 	etype int // 错误类型
 	v1    int // 记录下出错时的除数、被除数
 	v2    int
 }
 
 // 实现接口方法 error.Error()
-func (div_err DIV_ERR) Error() string {
-	if div_err.etype == 0 {
+func (divErr DivErr) Error() string {
+	if divErr.etype == 0 {
 		return "除零错误"
 	} else {
 		return "未知错误"
@@ -509,10 +508,10 @@ func (div_err DIV_ERR) Error() string {
 }
 
 // 除法
-func division(a, b int) (int, *DIV_ERR) {
+func division(a, b int) (int, *DivErr) {
 	if b == 0 {
 		// 返回错误信息
-		return 0, &DIV_ERR{0, a, b}
+		return 0, &DivErr{0, a, b}
 	} else {
 		// 返回正常结果
 		return a / b, nil
@@ -548,6 +547,16 @@ func chanCache() {
 
 	// 获取这两个数据
 	fmt.Printf("chan1 = %d, chan2 = %d\n", <-chanChe, <-chanChe)
+}
+
+// channel close()
+func chanClose(n int, ch chan int) {
+	x, y := 0, 1
+	for i := 0; i < n; i++ {
+		ch <- x
+		x, y = y, x+y
+	}
+	close(ch)
 }
 
 func main() {
@@ -641,5 +650,18 @@ func main() {
 	x, y := <-ch, <-ch
 	fmt.Printf("x = %d, y = %d, x+y = %d\n", x, y, x+y)
 
+	// channel 缓存区
 	chanCache()
+
+	// close
+	ch2 := make(chan int, 10)
+	fmt.Printf("cap(ch2) = %d\n", cap(ch2))
+	go chanClose(cap(ch2), ch2)
+	/*range 函数遍历每个从通道接收到的数据，因为 c 在发送完 10 个
+	数据之后就关闭了通道，所以这里我们 range 函数在接收到 10 个数据
+	之后就结束了。如果上面的 c 通道不关闭，那么 range 函数就不
+	会结束，从而在接收第 11 个数据的时候就阻塞了。*/
+	for i := range ch2 {
+		fmt.Println(i)
+	}
 }
