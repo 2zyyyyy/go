@@ -29,7 +29,7 @@
 ##### Go只有25个关键字
 
 ```go
- break        default      func         interface    select
+	 break        default      func         interface    select
  case         defer        go           map          struct
  chan         else         goto         package      switch
  const        fallthrough  if           range        type
@@ -552,13 +552,734 @@ func main() {
 }
 ```
 
+##### 匿名变量
 
+​	在使用多重赋值时，如果想要忽略某个值，可以使用`匿名变量（anonymous variable）`。 匿名变量用一个下划线_表示，例如：
+
+``````go
+func foo()(int, string) {
+  return 10, "test"
+}
+
+func main() {
+  x, _ := foo()
+  _, y := foo()
+  fmt.Println("x=", x)
+  fmt.Ptintln("y=", y)
+}
+``````
+
+​	匿名变量不占用命名空间，不会分配内存，所以匿名变量之间不存在重复声明。
+
+**注意事项：**
+
+- 函数外的每个语句都必须以关键字开始（var、const、func等）
+- :=不能使用在函数外
+- _多用于占位符，表示忽略值
+
+##### 常量
+
+​	相对于变量，常量是恒定不变的值，多用于定义程序运行期间不会改变的那些值。敞亮的声明和变量声明非常累是，只是把`var` 变成了`const`，常量在定义的时候必须赋值。
+
+```go
+const pi = 3.1415
+const e = 2.7182
+```
+
+​	声明了`pi` 和 `e`这两个常量后，在整个程序运行期间它们的值都不能再发生变化了。
+
+多个常量也可以一起声明：
+
+```go
+const (
+		pi = 3.1415
+  	e = 2.7182
+)
+```
+
+`const`同时声明多个常量时，如果忽略了值则表示和上面一行的值相同，例如：
+
+```go
+const (
+		n1 = 100
+  	n2
+  	n3
+)
+```
+
+上面的示例中，常量`n1 = n2 = n3 = 100`
+
+##### iota
+
+​	iota是go语言的常量计数器，只能在常量的表达式中使用。
+
+iota在const关键字出现时将被重置为0.const中每增加一行常量声明将使iota计数一次(iota可理解为const与剧中的行索引)。使用iota能简化定义，在定义枚举时很有用。
+
+举个例子：
+
+```go
+const (
+		n1 = iota // 0
+  	n2				// 1
+  	n3				// 2
+  	n4				// 3
+)
+
+// 使用_跳过某些值
+const (
+		n1 = iota // 0
+  	n2				// 1
+  	_				
+  	n4				// 3
+)
+
+// 多个iota定义在一行
+const (
+		a, b = iota + 1, iota + 2 // 1, 2
+  	c, d											// 2, 3
+  	e, f											// 3, 4
+)
+```
 
 #### 8、基本类型
 
+##### 基本类型介绍
+
+​	golang更明确的数字类型命名，支持Unicode，支持常用数据结构
+
+| 类型          | 长度（byte） | 默认值 | 说明                                      |
+| ------------- | ------------ | ------ | ----------------------------------------- |
+| bool          | 1            | false  |                                           |
+| byte          | 1            | 0      | unit8                                     |
+| rune          | 4            | 0      | Unicode Code Point, int32                 |
+| int, uint     | 4或8         | 0      | 32位或64位                                |
+| int8， uint8  | 1            | 0      | -128 ~ 127, 0 ~ 255，byte是uint8 的别名   |
+| int16, uint16 | 2            | 0      | -32768 ~ 32767, 0 ~ 65535                 |
+| int32, uint32 | 4            | 0      | -21亿~ 21亿, 0 ~ 42亿，rune是int32 的别名 |
+| int64, uint64 | 8            | 0      |                                           |
+| float32       | 4            | 0.0    |                                           |
+| float64       | 8            | 0.0    |                                           |
+| complex64     | 8            |        |                                           |
+| complex128    | 16           |        |                                           |
+| uintptr       | 4或8         |        | 以存储指针的 uint32 或 uint64 整数        |
+| array         |              |        | 值类型                                    |
+| struct        |              |        | 值类型                                    |
+| string        |              | “”     | UTF-8 字符串                              |
+| slice         |              | nil    | 引用类型                                  |
+| map           |              | nil    | 引用类型                                  |
+| channel       |              | nil    | 引用类型                                  |
+| interface     |              | nil    | 接口                                      |
+| function      |              | nil    | 函数                                      |
+
+支持八进制、 六进制，以及科学记数法。标准库 math 定义了各数字类型取值范围。
+
+```go
+     a, b, c, d := 071, 0x1F, 1e9, math.MinInt16
+```
+
+空指针值 nil，而非C/C++ NULL。
+
+##### 整型
+
+​	整型分为以下两个大类： 按长度分为：`int8`、`int16`、`int32`、`int64`对应的无符号整型：`uint8`、`uint16`、`uint32`、`uint64`
+
+​	其中，`uint8`就是我们熟知的`byte`型，`int16`对应C语言中的`short`型，`int64`对应C语言中的`long`型。
+
+##### 浮点型
+
+​	Go语言支持两种浮点型数：`float32`和`float64`。这两种浮点型数据格式遵循`IEEE 754`标准： `float32` 的浮点数的最大范围约为`3.4e38`，可以使用常量定义：`math.MaxFloat32`。 `float64` 的浮点数的最大范围约为 `1.8e308`，可以使用一个常量定义：`math.MaxFloat64`。
+
+##### 复数
+
+​	`complex64`和`complex128`
+
+复数有实部和虚部，`complex64`的实部和虚部为32位，`complex128`的实部和虚部为64位。
+
+##### 布尔值
+
+​	Go语言中以`bool`类型进行声明布尔型数据，布尔型数据只有`true（真）`和`false（假）`两个值。
+
+**注意：**
+
+- 布尔类型默认为false
+- go语言中不允许将整型强制转换为布尔型
+- 布尔值无法参与数值运算，也无法与其它类型进行转换
+
+##### 字符串
+
+​	Go语言中的字符串以原生数据类型出现，使用字符串就像使用其他原生数据类型`（int、bool、float32、float64 等）`一样。 Go 语言里的字符串的内部实现使用UTF-8编码。 字符串的值为双引号(“)中的内容，可以在Go语言的源码中直接添加非`ASCII`码字符，例如：
+
+```go
+str1 := "test"
+str2 := "测试"
+```
+
+##### 字符串转义符
+
+​	Go 语言的字符串常见转义符包含回车、换行、单双引号、制表符等，如下表所示。
+
+| 转义 | 含义                               |
+| :--- | :--------------------------------- |
+| \r   | 回车符（返回行首）                 |
+| \n   | 换行符（直接跳到下一行的同列位置） |
+| \t   | 制表符                             |
+| '    | 单引号                             |
+| "    | 双引号                             |
+| \    | 反斜杠                             |
+
+举个例子，我们要打印Windows平台下的一个文件路径：
+
+```go
+package main
+imoirt (
+		"fmt"
+)
+
+func main() {
+  fmt.Println("str := \"C:\\pprof\\main.exe\"")
+}
+```
+
+##### 多行字符串
+
+​	Go语言中要定义一个多行字符串时，就必须使用`反引号`字符：
+
+```go
+ s1 := `第一行
+    第二行
+    第三行
+    `
+ fmt.Println(s1)
+```
+
+##### 字符串的常用操作
+
+| 方法                                | 介绍           |
+| :---------------------------------- | :------------- |
+| len(str)                            | 求长度         |
+| +或fmt.Sprintf                      | 拼接字符串     |
+| strings.Split                       | 分割           |
+| strings.Contains                    | 判断是否包含   |
+| strings.HasPrefix,strings.HasSuffix | 前缀/后缀判断  |
+| strings.Index(),strings.LastIndex() | 子串出现的位置 |
+| strings.Join(a[]string, sep string) | join操作       |
+
+##### byte和rune类型
+
+​	组成每个字符串的元素叫做“字符”，可以通过遍历或者单个获取字符串元素获得字符。 字符用单引号（’）包裹起来，如：
+
+```go
+    var a := '中'
+    var b := 'x'
+```
+
+​	Go 语言的字符有以下两种：
+
+```go
+    uint8类型，或者叫 byte 型，代表了ASCII码的一个字符。
+    rune类型，代表一个 UTF-8字符。
+```
+
+	当需要处理中文、日文或者其他复合字符时，则需要用到`rune`类型。`rune`类型实际是一个`int32`。
+
+​	Go 使用了特殊的 `rune` 类型来处理 `Unicode`，让基于 `Unicode`的文本处理更为方便，也可以使用 `byte` 型进行默认字符串处理，性能和扩展性都有照顾
+
+##### 修改字符串
+
+​	要修改字符串，需要先将其转换成`[]rune或[]byte`，完成后再转换为`string`。无论哪种转换，都会重新分配内存，并复制字节数组。
+
+```go
+    func changeString() {
+        s1 := "hello"
+        // 强制类型转换
+        byteS1 := []byte(s1)
+        byteS1[0] = 'H'
+        fmt.Println(string(byteS1))
+
+        s2 := "博客"
+        runeS2 := []rune(s2)
+        runeS2[0] = '狗'
+        fmt.Println(string(runeS2))
+    }
+```
+
+##### 类型转换
+
+​	Go语言中只有强制类型转换，没有隐式类型转换。该语法只能在两个类型之间支持相互转换的时候使用。
+
+​	强制类型转换的基本语法如下：
+
+```go
+    T(表达式)
+```
+
+​	其中，T表示要转换的类型。表达式包括变量、复杂算子和函数返回值等。
+
+​	比如计算直角三角形的斜边长时使用math包的Sqrt()函数，该函数接收的是float64类型的参数，而变量a和b都是int类型的，这个时候就需要将a和b强制类型转换为float64类型。
+
 #### 9、数据Array
 
+​	Golang Array和以往认知的数组有很大不同。
+
+1. 数组：是同一种数据类型的固定长度的序列
+
+2. 数组定义：var a [len]int，var a [5]int，数组长度必须是常量，且是类型的组成部分。一旦定义，长度不能变。
+
+3. 长度是数组类型的一部分，因此，var a[5]int 和var a[10]int是不同的类型。
+
+4. 数组可以通过下标进行访问，下表是从0开始，最后一个元素的下标是：len(array) - 1
+
+   ```go
+   for i :=0; i < len(a); i++ {
+     ……
+   }
+   for index, v := range a {
+     ……
+   }
+   ```
+
+5. 访问越界，如果下标在数组的合法范围之外，则触发访问越界，会panic
+
+6. 数组是值类型，赋值和传参会复制整个数组，而不是指针。因此改变副本的值，不会改变本身的值
+
+7. 支持`++`、`!=`操作符，因为内存总是被初始化过得
+
+8. 指针数组`[n]*T`，数组指针` *[n]T`。
+
+##### 数组初始化
+
+**一维数组**：
+
+```go
+// 全局
+var arr0 [5]int = [5]int{1, 2, 3}
+var arr1 = [5]int{1, 2, 3, 4, 5}
+var arr2 = [...]int{1, 2, 3, 4, 5, 6}
+var str = [5]string{3: "test", 4: "demo"}
+
+// 局部
+a := [3]int{1, 2} // 未初始化元素值为0
+b := [...]int{1, 2, 3, 4}  // 通过初始化值来确定数组长度
+c := [5]int{2: 100, 3: 400} // 使用索引号初始化元素
+d := [...]struct {
+  name string
+  age uint8
+}{
+  {"user1", 10} // 可省略元素类型
+  {"user2", 20}, // 最后一行逗号
+}
+```
+
+**多维数组：**
+
+```go
+// 全局
+var arr0[3][5]int
+var arr1[2][3]int = [...][3]int{{1, 2, 3}, {7, 8, 9}}
+
+// 局部
+a := [2][3]int{{1, 2, 3}, {4, 5, 6}}
+b := [...][2]int{{1,1}, {2, 2}, {3, 3}}  // 第二维度不能用...
+```
+
+​	值拷贝行为会造成性能问题，通常会建议使用 slice，或数组指针。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func test(arr [2]int) {
+  fmt.Printf("x:%p\n", &x)
+  x[1] = 1000
+}
+
+func main() {
+  a := [2]int{}
+  fmt.Printf("a:%p\n", &a)
+  test(a)
+  fmt.Println(a)
+}
+```
+
+​	内置函数 len 和 cap 都返回数组长度 (元素数量)。
+
+```go
+package main
+
+func main() {
+  a := [2]int{}
+  println(len(a), cap(a))
+}
+```
+
+**多维数组遍历：**
+
+```go
+package main
+import (
+    "fmt"
+)
+
+func main() {
+ var f [2][3]int = [...][3]int{{1, 2, 3}, {7, 8, 9}}
+	for k1, v1 := range f {
+		for k2, v2 := range v1 {
+			fmt.Printf("(key=%d, value=%d) = %d\n", k1, k2, v2)
+		}
+	}
+}
+```
+
+![image-20211029151822612](https://tva1.sinaimg.cn/large/008i3skNgy1gvw7fuuu78j309i04swem.jpg)
+
+**数据拷贝和传参：**
+
+```go
+package main
+
+import "fmt"
+
+func printArray(arr *[5]int) {
+  arr[0] = 10
+  for i, v := range arr {
+    fmt.Println(i, v)
+  }
+}
+
+func main() {
+  var arr1 [5]int
+  printArray(&arr1)
+  fmt.Println(arr1)
+  
+  arr2 := [...]int{2, 4, 6, 8, 10}
+  printArray(&arr2)
+  fmt.Println(arr2)
+}
+```
+
+**数组练习**
+
+- **求所有元素之和**
+
+  ```go
+  package main
+  
+  import (
+  		"fmt"
+    	"math/rand"
+    	"time"
+  )
+  
+  // 求元素和
+  func sumArray(a [10]int) int {
+    var sum = 0
+    for i :=0; i < len(a); i++ {
+      sum += a[i]
+    }
+    return sum
+  }
+  
+  func main() {
+    // 若想做一个真正的随机数，要种子 seed()种子默认是1 rand.Seed(1)
+    rand.Seed(time.Now().Unix())
+    
+    var b [10]int
+    for i :=0; i < len(b); i++{
+      // 产生一个1~1000随机数
+      b[i] = rand.Intn(1000)
+    }
+    sum := sumArray(b)
+    fmt.Printf("sum:%d", sum)
+  }
+  ```
+
+  ![image-20211029154950940](https://tva1.sinaimg.cn/large/008i3skNgy1gvw8clnyraj30ik02aaa1.jpg)
+
+- **找出数组中和为给定值的两个元素的下标，例如数组[1,3,5,8,7]，找出两个元素之和等于8的下标分别是（0，4）和（1，2）**
+
+  ```go
+  package main
+  
+  import "fmt"
+  // 找出数组中和为给定值的两个元素的下标，例如数组[1,3,5,8,7]，
+  // 找出两个元素之和等于8的下标分别是（0，4）和（1，2）
+  // 找出数组中和为给定值的两个元素的下标
+  func testsSum(n [6]int, sum int) {
+  	for i := 0; i < len(n); i++ {
+  		for j := i; j < len(n); j++ {
+  			if n[i]+n[j] == sum {
+  				fmt.Println(i, j)
+  			}
+  		}
+  	}
+  }
+  
+  func main() {
+    n := [6]int{0, 1, 3, 5, 7, 8}
+  	fmt.Println(n)
+  	testsSum(n, 8)
+  }
+  ```
+
+  ![image-20211029171229088](https://tva1.sinaimg.cn/large/008i3skNly1gvwaqkw1wwj307o032a9v.jpg)
+
 #### 10、切片Slice
+
+​	需要说明，slice并不是数组或数组指针。它通过内部指针和相关属性引用数组片段，以实现变长方案。
+
+1. 切片：切片是数组的一个引用，因此切片是引用类型。但自身是结构体，值拷贝传递。
+2. 切片的长度可以改变，因此，切片是一个可变数组。
+3. 切片遍历方式和数组一样可以用`len()`求长度。表示可用元素数量，读写操作不能超过该限制。
+4. `cap()`可以求出slice最大扩张容量，不能超过数组限制。`0 <= len(slice) <=len(array)`，其中array是slice引用的数组。
+5. 切片的定义。var 变量名 []类型，比如：`var s []string    var a []int`。
+6. 如果slice == nil，那么len、cap结果都等于0。
+
+##### 创建切片的各种方式
+
+```go
+package main 
+
+import "fmt"
+
+func main() {
+  // 1.声明切片
+  var s1 []int
+  if s == nil {
+    fmt.Println("s1为空~")
+  } else {
+    fmt.Println("s1不为空~")
+  }
+  
+  // 2.:=
+  s2 := []int{}
+  
+  // 3.make
+  var s3 []int = make([]int, 0)
+  
+  // 4.初始化赋值
+  var s4 []int = make([]int, 0, 0)
+  fmt.Println(s4)
+  s5 := []int{1, 2, 3}
+  fmt.Println(s5)
+  
+  // 5.从数组切片
+  arr := [5]int{1, 2, 3, 4, 5}
+  var s6 []int
+  // 前包后不包
+  s6 = arr[:4]
+  fmt.Println(s6)
+}
+```
+
+**切片初始化**
+
+```go
+// 全局
+var arr = [...]int{1, 2, 3, 4, 5, 6, 7, 8, ,9, 10}
+
+var slice0 []int = arr[start: end]
+var slice1 []int = arr [:end]
+car slice2 []int = arr[start:]
+var slice3 []int = arr[:]
+var slice4 []int = arr[:len(arr) -1] // 去尾
+var slice5 []int = arr.slice(1:len(arr)) // 去头
+```
+
+| 操作              | 含义                                                         |
+| ----------------- | ------------------------------------------------------------ |
+| s[n]              | 切片s中索引位置为n的项                                       |
+| s[:]              | 从切片s的索引位置0到len(s)-1处所获得的切片                   |
+| s[low:]           | 从切片s的索引位置low到len(s)-1处所获得的切片                 |
+| s[:high]          | 从切片s的索引位置0到high处所获得的切片（len=high）           |
+| s[low: high]      | 从切片s的索引位置low到high处所获得的切片（len=high-low）     |
+| s[low: high: max] | 从切片s的索引位置low到high处所获得的切片(len=high-low,cap=max-low) |
+| len(s)            | 切片s的长度，总是<=cap(s)                                    |
+| cap(s)            | 切片s的容量，总是>=len(s)                                    |
+
+**通过make来创建切片**
+
+```go
+var slice []type = make([]type, len)
+slice := make([]type, len)
+slice := make([]type, len, cap)
+```
+
+![image-20211101145952773](https://tva1.sinaimg.cn/large/008i3skNly1gvznrhttedj30uu09yt98.jpg)
+
+切片内存布局：![image-20211101150130456](https://tva1.sinaimg.cn/large/008i3skNly1gvznt6wt0sj30y60c8mxx.jpg)
+
+读写操作实际目标是底层数组，只需注意索引号的差别。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+  data := [...]int{0, 1, 2, 3, 4, 5}
+  s := data[2:4]
+  s[0] += 200
+  s[1] += 100
+  
+  fmt.Println(s)
+  fmt.Println(data)
+}
+```
+
+![image-20211101150954561](https://tva1.sinaimg.cn/large/008i3skNly1gvzo1x3ggcj309601qa9w.jpg)
+
+​								 修改的是s，但实际是对底层数组（data）的操作
+
+直接创建slice对象，自动分配底层数组。
+
+```go
+package main 
+
+import "fmt"
+
+func main() {
+  s1 := []int{0, 1, 2, 3, 8: 100} // 通过初始化表达式构造，可使用索引号
+  fmt.Println(s1, len(s1), cap(s1))
+  
+  s2 := make([]int, 6, 8) // 使用make创建，指定长度和容量
+  fmt.Println(s2, len(s2), cap(s2))
+  
+  s3 := make([]int, 6) // 初始化未指定cap， 相当于cap = len
+  fmt.Println(s3, len(s3), cap(s3))
+}
+```
+
+使用make动态创建slice，避免了数组必须用常量做长度的麻烦。还可以用指针直接访问底层数组，退化成普通数组操作。
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+  s := []int{0, 1, 2, 3}
+  p := &s[0]  // *int,获取底层数组元素指针
+  *p += 1
+  
+  fmt.Println(s)
+  
+  // [][]T,是指元素类型为[]T
+  data := [][]int{
+    {1, 2, 3}
+    {10, 20 ,30}
+    {100, 200, 300}
+  }
+  fmt.Println(data)
+}
+```
+
+![image-20211101154342237](https://tva1.sinaimg.cn/large/008i3skNly1gvzp13sos9j30fi01qgli.jpg)
+
+可直接修改struct、array、slice成员。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+  d := [5]struct{
+    x int
+  }{}
+  
+  s := d[:]
+  d[1].x = 10
+  d[2].x = 20
+  
+  fmt.Println(d)
+  fmt.Printf("%p, %p\n", &d, &d[0])
+}
+```
+
+**append操作切片（追加）**
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+  a := []int{1, 2, 3}
+  fmt.Printf("slice a:%v\n", a)
+  
+  b := []int{4, 5, 6}
+  fmt.Printf("slice b:%v\n", b)
+  
+  c := append(a, b)
+  fmt.Printf("slice c:%v\n", c)
+}
+```
+
+![image-20211101165313156](https://tva1.sinaimg.cn/large/008i3skNly1gvzr1fkb41j308y028mx2.jpg)
+
+append ：向 slice 尾部添加数据，返回新的 slice 对象。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+  	s1 := make([]int, 0, 5)
+    fmt.Printf("%p\n", &s1)
+  
+    s2 := append(s1, 1)
+    fmt.Printf("%p\n", &s2)
+
+    fmt.Println(s1, s2)
+}
+```
+
+![image-20211101165721937](https://tva1.sinaimg.cn/large/008i3skNly1gvzr5q3p0qj307w02e3yd.jpg)
+
+**超过slice.cap限制，就会重新分配底层数组，即便原有数组未填满**
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+  data := [...]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+  s := data[:2:3] // 取索引0~1，容量为3
+  
+  s = append(s, 10, 20) // 添加2个值，超出容量3限制
+  fmt.Println(s, data)         // 重新分配底层数组，与原数组无关。
+  fmt.Println(&s[0], &data[0]) // 比对底层数组起始指针。
+}
+```
+
+![image-20211101201407347](https://tva1.sinaimg.cn/large/008i3skNgy1gvzwuk0ds5j30dw032aa3.jpg)
+
+​	从输出结果可以看出，append后s重新分配了底层数组，并复制数据。如果只追加一个值，则不会超过s.cap限制，也就不会分配。
+
+​	通常以2倍容量重新分配底层数组。在大批量添加数据时，建议一次性分配足够大的空间，以减少内存分配和数据复制开销。或初始化组构成的len属性，改用索引号进行操作。及时释放不再使用的slice对象，避免持有过期数组，造成GC无法回收。
+
+
+
+
+
+
+
+
+
+
+
+
 
 #### 11、Slice底层实现
 
