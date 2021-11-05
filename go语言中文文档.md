@@ -1269,21 +1269,324 @@ func main() {
 
 ​	通常以2倍容量重新分配底层数组。在大批量添加数据时，建议一次性分配足够大的空间，以减少内存分配和数据复制开销。或初始化组构成的len属性，改用索引号进行操作。及时释放不再使用的slice对象，避免持有过期数组，造成GC无法回收。
 
+**slice中cap重新分配规律：**
 
+```go
+package main
 
+import "fmt"
 
+func main() {
+  s11 := make([]int, 0, 1)
+	c := cap(s11)
+	fmt.Printf("初始容量：%d\n", c)
 
+	for i := 0; i < 50; i++ {
+		// 追加
+		s11 = append(s11, i)
+		if n := cap(s11); n > c {
+			fmt.Printf("追加前cap为: %d -> 追加后cap为:%d\n", c, n)
+			c = n
+		}
+	}
+}
+```
 
+![image-20211102100728896](https://tva1.sinaimg.cn/large/008i3skNgy1gw0kxku3a3j30dk05mq3k.jpg)
 
+**切片拷贝**
 
+```go
+package main
 
+import "fmt"
 
+func main() {
+  s1 :=[]int{1, 2, 3, 4, 5}
+  fmt.Printf("slice s1:%v\n", s1)
+  
+  s2 := make([]int, 10)
+  fmt.Printf("slice s2:%v\n", s2)
+  
+  copy(s2, s1)
+  fmt.Printf("copied slice s1 : %v\n", s1)
+  fmt.Printf("copied slice s2 : %v\n", s2)
+  
+  s3 := []int{1, 2, 3}
+  fmt.Printf("slice s3:%v\n", s3)
+  s3 = append(s3, s2...)
+  fmt.Printf("append s3:%v\n", s3)
+  s3 = append(s3, 4, 5, 6)
+  fmt.Printf("last s3:%v\n", s3)
+}
+```
 
+![image-20211102104358412](https://tva1.sinaimg.cn/large/008i3skNgy1gw0lzjm0oij30gw05c0t5.jpg)
 
+**copy()：函数copy在两个slice间复制数据，复制长度以len最小的为准。两个slice可指向同一底层数组，允许元素区间重叠。**
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+  data := [...]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+  fmt.Println("array data:", data)
+  
+  s1 := data[8:]
+  s2 := data[:5]
+  fmt.Printf("slice s1:%v\n", s1)
+  fmt.Printf("slice s2:%v\n", s2)
+
+  copy(s2, s1)
+  fmt.Printf("copied slice s1 : %v\n", s1)
+  fmt.Printf("copied slice s2 : %v\n", s2)
+  fmt.Println("last array data : ", data)
+}
+```
+
+![image-20211102112138666](https://tva1.sinaimg.cn/large/008i3skNgy1gw0n2qgkimj30gg04oq38.jpg)
+
+**slice遍历**
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+  data := [...]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+  sl := data[:]
+  for i, v := range s1 {
+    fmt.Printf("i:%v, v:%v\n", i ,v)
+  }
+}
+```
+
+![image-20211102112603408](https://tva1.sinaimg.cn/large/008i3skNly1gw0n7bqh1zj305207uaa2.jpg)
+
+**切片resize（调整大小）**
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+  a12 := []int{1, 2, 3, 4}
+	fmt.Printf("slice a12:%v, len(a12):%v\n", a12, len(a12))
+
+	b12 := a12[1:2]
+	fmt.Printf("slice b12:%v, len(b12):%v\n", b12, len(b12))
+
+	c12 := b12[0:3]
+	fmt.Printf("slice c12:%v, len(c12):%v\n", c12, len(c12))
+}
+```
+
+![image-20211102140943922](https://tva1.sinaimg.cn/large/008i3skNgy1gw0rxmpqn7j30cs028jrf.jpg)
+
+**数组和切片的内存布局**
+
+![image-20211102141750577](https://tva1.sinaimg.cn/large/008i3skNgy1gw0s62qjfbj30yk0buwf5.jpg)
+
+**字符串和切片（string and slice）**
+
+​	string底层就是一个byte的数组，因此，也可以进行切片操作。
+
+```go
+package main 
+
+import "fmt"
+
+func main() {
+ 	str := "software tester"
+	s1 := str[0:8]
+	fmt.Println(s1)
+
+	s2 := str[9:]
+	fmt.Println(s2)
+}
+```
+
+![image-20211102150256204](https://tva1.sinaimg.cn/large/008i3skNly1gw0tgzg9jjj305001mjr6.jpg)
+
+​	string本身是不可变的，因此要改变string中字符。需要如下操作：
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+  str := "software tester"
+  s := []byte(str)  // 中文字符需要用rune
+  s[0] := 'S'
+  s = append(s, '!')
+  str = string(s)
+  fmt.Println(str)
+}
+```
+
+`Software tester!`
+
+**含有中文字符串**
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+  str := "欲穷千里日，更上一层娄！"
+	s := []rune(str)
+	s[4] = '目'
+	s[10] = '楼'
+	str = string(s)
+	fmt.Println(str)
+}
+```
+
+![image-20211102151503033](https://tva1.sinaimg.cn/large/008i3skNly1gw0ttl6mncj309c010dfo.jpg)
+
+​	golang slice data[:6:8]两个冒号理解：
+
+​	常规slice，data[6:8]，从第6位到第8位（返回6， 7），长度len为2， 最大可扩充长度cap为4（6-9）。
+
+​	另一种写法： data[:6:8] 每个数字前都有个冒号， slice内容为data从0到第6位，长度len为6，最大扩充项cap设置为8。
+
+​	a[x:y:z] 切片内容 [x:y] 切片长度: y-x 切片容量:z-x。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+  slice := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	data1 := slice[6:8]
+	fmt.Printf("data1：%v, len(data1):%d, cap(data1):%d\n", data1, len(data1), cap(data1))
+
+	data2 := slice[:6:8]
+	fmt.Printf("data2：%v, len(data2):%d, cap(data2):%d\n", data2, len(data2), cap(data2))
+}
+```
+
+![image-20211102152833650](https://tva1.sinaimg.cn/large/008i3skNgy1gw0u7nwuyxj30je01k3yl.jpg)
+
+**数组或切片转字符串：**
+
+```go
+strings.Replace(strings.Trim(fmt.Sprint(array_or_slice), "[]"), " ", ",", -1)
+```
 
 #### 11、Slice底层实现
 
+##### 本章不属于基础部分但是面试会经常问建议学学
+
+暂时跳过~
+
+​	切片是 Go 中的一种基本的数据结构，使用这种结构可以用来管理数据集合。切片的设计想法是由动态数组概念而来，为了开发者可以更加方便的使一个数据结构可以自动增加和减少。但是切片本身并不是动态数据或者数组指针。切片常见的操作有 reslice、append、copy。与此同时，切片还具有可索引，可迭代的优秀特性。
+
+![img](https://tva1.sinaimg.cn/large/008i3skNly1gw0uc4yq45j31ai0grgmj.jpg)
+
+……
+
 #### 12、指针
+
+​	区别于C/C++中的指针，go语言中的指针不能进行便宜和运算，是安全指针。
+
+要搞明白go语言中的指针需要先知道3个概念：指针地址、指针类型和指针取值。
+
+**Go语言的指针**
+
+​	Go语言中的函数传参都是值拷贝，当我们想要修改某个变量的时候，我们可以创建一个指向该变量地址的指针变量。传递数据使用指针，而无须拷贝数据。类型指针不能进行偏移和运算。Go语言中的指针操作非常简单，只需要记住两个符号：`&`（取地址）和`*`（根据地址取值）。
+
+**指针地址和指针类型**
+
+​	每个变量在运行时都拥有一个地址，这个地址代表变量在内存中的位置。Go语言中使用&字符放在变量前面对变量进行“取地址”操作。 Go语言中的值类型`（int、float、bool、string、array、struct）`都有对应的指针类型，如：`*int、*int64、*string`等。
+
+```go
+// 取变量指针的语法如下：
+ptr := &v  // v的类型为T
+
+// 其中：
+// 1.v代表被取地址的变量，类型为T
+// 2.ptr用于接收地址的变量，ptr的类型就是*T，乘坐T的指针类型。*代表指针
+
+// 举例说明
+func main() {
+  a20 := 10
+	b20 := &a20
+	fmt.Printf("a20:%d, ptr:%p\n", a20, &a20)
+	fmt.Printf("b20:%p, type:%T\n", b20, b20)
+	fmt.Printf("b20:%p, *b20:%d\n", &b20, *b20)
+}
+```
+
+![image-20211102165007256](https://tva1.sinaimg.cn/large/008i3skNgy1gw0wkiq4g6j30bm02ewek.jpg)
+
+我们来看一下`b := &a`的图示：
+
+![image-20211102165058766](https://tva1.sinaimg.cn/large/008i3skNgy1gw0wlf1k4uj310q0eawf5.jpg)
+
+**指针取值**
+
+​	在对普通变量使用&操作符取地址后会获得这个变量的指针，然后可以对指针使用*操作，也就是指针取值，代码如下：
+
+```go
+func main() {
+  	//指针取值
+    a := 10
+    b := &a // 取变量a的地址，将指针保存到b中
+    fmt.Printf("type of b:%T\n", b)
+    c := *b // 指针取值（根据指针去内存取值）
+    fmt.Printf("type of c:%T\n", c)
+    fmt.Printf("value of c:%v\n", c)
+}
+```
+
+​	总结： 取地址操作符&和取值操作符`*`是一对互补操作符，`&`取出地址，`*`根据地址取出地址指向的值。
+
+​	变量、指针地址、指针变量、取地址、取值的相互关系和特性如下：
+
+1. 对变量进行取地址（&）操作，可以获得这个变量的指针地址。
+2. 指针变量的值是指针地址。
+3. 对指针变量进行取值（*）操作，可以获得指针变量指向的原变量的值。
+
+指针传值实例：
+
+```go
+func modify1() {
+  x = 100
+}
+
+func modify2(x *int) {
+  *x = 100
+}
+
+func main() {
+  a := 10
+  modify1(a) // 10
+  fmt.Println(a)
+  
+  modify2(&a)
+  fmt.Println(a) // 100
+}
+```
+
+
+
+
+
+
+
+
 
 #### 13、Map
 
