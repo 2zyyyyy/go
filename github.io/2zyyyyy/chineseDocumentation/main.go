@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"reflect"
 	//_ "go/github.io/2zyyyyy/hello"
 )
 
@@ -205,10 +206,27 @@ func main() {
 	// fmt.Printf("b20:%p, type:%T\n", b20, b20)
 	// fmt.Printf("b20:%p, *b20:%d\n", &b20, *b20)
 
-	a20 := 10
-	modify1(a20)
-	fmt.Println(a20)
+	// a20 := 10
+	// modify1(a20)
+	// fmt.Println(a20)
 
-	modify2(&a20)
-	fmt.Println(a20)
+	// modify2(&a20)
+	// fmt.Println(a20)
+	// var a *int = new(int)
+	// *a = 100
+	// fmt.Println(*a)
+
+	// var b map[string]int
+	// b["测试"] = 100
+	// fmt.Println(b)
+
+	// 指针练习
+	// 程序定义一个int变量num的地址并打印
+	// 将num的地址赋给指针ptr，并通过ptr去修改num的值
+	var num int
+	fmt.Println(&num)
+	ptr := &num
+	fmt.Println(reflect.TypeOf(ptr))
+	*ptr = 20
+	fmt.Println(num)
 }

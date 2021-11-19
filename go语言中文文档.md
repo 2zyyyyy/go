@@ -1580,15 +1580,194 @@ func main() {
 }
 ```
 
+**空指针**
 
+- 当一个指针被定义后没有分配任何变量时，它的值为nil
 
+- 空指针判断
 
+  ```go
+  package main
+  
+  import "fmt"
+  
+  func main() {
+    var p *string
+    fmt.Println(p)
+    fmt.Printf("p的值是%v\n", p)
+     if p != nil {
+        fmt.Println("非空")
+     } else {
+        fmt.Println("空值")
+     }
+  }
+  ```
 
+**new和make**
 
+先看实例：
 
+```go
+func main() {
+  var a *int
+  *a = 100
+  fmt.Println(*a)
+  
+  var b map[string]int
+  b["测试"] =  100
+  fmt.Println(b)
+}
+```
 
+执行上面的代码会引发panic，为什么呢？ 在Go语言中对于引用类型的变量，我们在使用的时候不仅要声明它，还要为它分配内存空间，否则我们的值就没办法存储。而对于值类型的声明不需要分配内存空间，是因为它们在声明的时候已经默认分配好了内存空间。要分配内存，就引出来今天的new和make。 Go语言中new和make是内建的两个函数，主要用来分配内存
+
+**new**
+
+​	new是一个内置的函数，它的函数签名如下：
+
+```go
+func new(Type) *Type
+```
+
+```go
+其中：
+1.Type表示类型，new函数只接受一个参数，这个参数是一个类型
+2.*Type表示类型指针，new函数返回一个指向该类型内存地址的指针。
+```
+
+​	new函数不太常用，使用new函数得到的是一个类型的指针，并且该指针对应的值为该类型的零值。举个例子：
+
+```go
+func main() {
+    a := new(int)
+    b := new(bool)
+    fmt.Printf("%T\n", a) // *int
+    fmt.Printf("%T\n", b) // *bool
+    fmt.Println(*a)       // 0
+    fmt.Println(*b)       // false
+} 
+```
+
+​	本节开始的示例代码中`var a *int`只是声明了一个指针变量a但是没有初始化，指针作为引用类型需要初始化后才会拥有内存空间，才可以给它赋值。应该按照如下方式使用内置的new函数对a进行初始化之后就可以正常对其赋值了：
+
+```go
+func main() {
+  var a *int
+  a = new(int)
+  *a = 10
+  fmt.Println(*a)
+}
+```
+
+**make**
+
+​	mak也是用语内存分配的，区别于new，他只用于slice、map以及channel的内存创建，而且它返回的类型就是这三个类型本身，而不是他们的指针类型，因为这三种类型就是引用类型，所以就没有必要返回他们的指针了。make函数的函数签名如下：
+
+```go
+func make(t Type, size ...InterType) Type
+```
+
+​    make函数是无可替代的，我们在使用slice、map以及channel的时候，都需要使用make进行初始化，然后才可以对他们进行操作。这个我们上一章中都有说明，关于channel我们会在后续的章节详细说明。
+
+​	本节开始的示例中`var b map[string]int `只是声明变量b是一个map类型的变量，需要像下面的示例代码一样使用make函数进行初始化操作之后，才能对其赋值：
+
+```go
+func main() {
+  var b map[string]int
+  b = make(map[string]int, 10)
+  b["测试"] = 100
+  fmt.Println(b)
+}
+```
+
+**new和make的区别**
+
+```go
+1.两者都是用来做内存分配的
+2.make只用于slice、map和channel的初始化，返回的值还是这三个引用类型本身
+3.而new用于类型的内存分配，并且内存对应的值为类型零值，返回的是指向类型的指针
+```
+
+**指针练习**
+
+- 程序定义一个int变量num的地址并打印
+- 将num的地址赋给指针ptr，并通过ptr去修改num的值
+
+```go
+func main() {
+  var num int
+  fmt.Println(num)
+  
+  ptr := &num
+  *ptr = 20
+  fmt.Println(num)
+}
+```
 
 #### 13、Map
+
+​	map是一种无序的基于k-v的数据结构，go语言中的map是引用类型，必须初始化才能使用。
+
+**map定义**
+
+​	go语言中map定义语法如下：
+
+```go
+map[keyType] valueType
+```
+
+其中：
+
+```go
+keyType:表示键的类型
+valueType:表示键对应值的类型
+```
+
+map类型的变量默认初始值为nil，需要使用make函数来分配内存。语法为：
+
+```go
+make(map[KeyType]ValueType, [cap])
+```
+
+其中cap表示map的容量，该参数虽然不是必须的，但是我们应该在初始化map的时候就为其指定一个合适的容量。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #### 14、Map实现原理
 
