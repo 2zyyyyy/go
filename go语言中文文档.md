@@ -1731,55 +1731,356 @@ make(map[KeyType]ValueType, [cap])
 
 其中cap表示map的容量，该参数虽然不是必须的，但是我们应该在初始化map的时候就为其指定一个合适的容量。
 
+**map的基本使用**
 
+​	map中的数据都是成对出现的，map的基本使用实例代码如下：
 
+```go
+func main() {
+  scoreMap := make(map[string]int, 8)
+  scoreMap["张三"] = 90
+  scoreMap["李四"] = 95
+  fmt.Println(scoreMap)
+  fmt.Println(scoreMap["李四"])
+  fmt.Printf("type of:%T\n", scoreMap)
+}
+```
 
+![image-20211124102412157](https://tva1.sinaimg.cn/large/008i3skNly1gwq11qomdhj3096034q31.jpg)
 
+map也支持在声明的时候填充元素：
 
+```go
+func main() {
+  userInfo := map[string]string {
+    "userName" : "wanli",
+    "passWord" : "123456",
+  }
+  fmt.Println(userInfo)
+}
+```
 
+**判断某个键是否存在**
 
+go语言中有个判断map中是否存在的特殊写法，格式如下：
 
+```go
+value, ok := map[key]
 
+// 举例说明
+func main() {
+  scoreMap := make(map[string]int, 8)
+  scoreMap["张三"] = 90
+  scoreMap["李四"] = 95
+  
+  // 如果key存在ok为true，v为对应的值；不存在OK=false v为值类型的零值
+  v, ok := scoreMap["张三"]
+  if ok {
+    fmt.Println(v)
+  } else {
+    fmt.Println("查无此人~")
+  }
+}
+```
 
+**map的遍历**
 
+​	go语言中使用for range遍历map。
 
+```go
+func main() {
+  scoreMap := make(map[string]int, 8)
+  scoreMap["张三"] = 90
+  scoreMap["李四"] = 95
+  scoreMap["王五"] = 100
+  for k, v := range scoreMap {
+    fmt.Println(k, v)
+  }
+}
+```
 
+*注意：遍历map时元素的顺序与添加键值对的顺序无关*
 
+**使用delete()函数删除键值对**
 
+​	使用delete()内建函数从map中该删除一组键值对，delete()函数格式如下：
 
+```go
+delete(map, key)
 
+// 其中：
+// map：表示要删除键值对的map
+// key：表示要删除键值对的键
 
+// 示例：
+func main() {
+  scoreMap := make(map[string]int, 8)
+  scoreMap["张三"] = 90
+  scoreMap["李四"] = 95
+  scoreMap["王五"] = 100
+  
+  // 删除 李四:95
+  delete(scoreMap, "李四")
+  for k, v := range scoreMap{
+    fmt.Println(k, v)
+  }
+}
+```
 
+**按照指定顺序遍历map**
 
+```go
+func main() {
+  rand.Seed(time.Now().UnixNano()) // 初始化随机数种子
+	scoreMap := make(map[string]int, 200)
+	
+  // 循环写入数据至map
+	for i := 0; i < 100; i++ {
+		key := fmt.Sprintf("test%2d", i) // 生产test开头的字符串
+		value := rand.Intn(100)          // 生产0~99随机整数
+		scoreMap[key] = value
+	}
 
+	// 取出map中所有的key存入切片keys
+	keys := make([]string, 0, 200)
+	for key := range scoreMap {
+		keys = append(keys, key)
+	}
+	// 对切片排序
+	sort.Strings(keys)
+	// 按照排序后的key遍历map
+	for _, key := range keys {
+		fmt.Println(key, scoreMap[key])
+	}
+}
+```
 
+**元素为map类型的切片**
 
+​	下面演示了切片中的元素为map类型时的操作：
 
+```go
+func main() {
+  mapSlice := make([]map[string]string, 3)
+	for index, value := range mapSlice {
+		fmt.Printf("index:%d value:%v\n", index, value)
+	}
+	fmt.Println("after init")
+	// 对切片中的map元素进行初始化
+	mapSlice[0] = make(map[string]string, 10)
+	mapSlice[0]["name"] = "张三"
+	mapSlice[0]["passWord"] = "123456"
+	mapSlice[0]["address"] = "未来park"
+	mapSlice[0]["age"] = "10"
+	mapSlice[0]["sex"] = "男"
+	for index, value := range mapSlice {
+		fmt.Printf("index:%d, value:%v\n", index, value)
+	}
+}
+```
 
+![image-20211124143712413](https://tva1.sinaimg.cn/large/008i3skNly1gwq8d044kdj30u005ogmb.jpg)
 
+**值为切片类型的map**
 
+​	下面的代码演示了map中值为切片类型的操作：
 
+```go
+sliceMap := make(map[string][]string, 3)
+	fmt.Println(sliceMap)
+	fmt.Println("after init~~~")
+	key := "杭州"
+	value, ok := sliceMap[key]
+	if !ok {
+		value = make([]string, 0, 2)
+	}
+	value = append(value, "北京", "上海")
+	sliceMap[key] = value
+	fmt.Println(sliceMap)
+	fmt.Printf("sliceMap Type is:%T, sliceMap[杭州] Type is:%T\n", sliceMap, sliceMap[key])
+```
 
-
-
-
-
-
-
-
-
+![image-20211124145422228](https://tva1.sinaimg.cn/large/008i3skNly1gwq8uv20pkj30s003adg3.jpg)
 
 #### 14、Map实现原理
 
+​	**什么是Map**
+
+**key，value存储**
+
+非基础内容后续学习……
+
 #### 15、结构体
 
+​	go语言中没有”类（class）“的概念，也不支持类的继承等面向对象的概念。go语言通过结构体的内嵌再配合接口比面向对象具有更高的扩展性和灵活性。
+
+##### 类型别名和自定义类型
+
+​	**自定义类型**
+
+​	在go语言中有一些基本的数据类型，如string、整型、浮点型、布尔等数据类型，go语言中可以使用type关键字来定义自定义类型。
+
+​	自定义类型是定义了一个全新的类型，我们可以基于内置的基本类型定义，也可以通过struct定义。例如：
+
+```go
+// 将MyInt定义为int类型
+type MyInt int
+```
+
+通过Type关键字的定义，MyInt就是一种新的类型，它具有int的特性。
+
+**类型别名**
+
+类型别名是Go1.9版本添加的新功能。
+
+类型别名规定：TypeAlias只是Type的别名，本质上TypeAlias与Type是同一个类型。类似张三有小名、乳名、英文名，这些名字都是指向张三这个人。
+
+```go
+type TypeAlias = Type
+```
+
+我们之前见过的rune和byte就是类型的别名，他们的定义如下：
+
+```go
+type byte = uint8
+type rune = int32
+```
+
+**类型定义和类型别名的区别**
+
+类型别名与类型定义表面上看只有一个等号的差异，我们通过下面的这段代码来理解他们之间的区别。
+
+```go
+//类型定义
+type NewInt int
+
+//类型别名
+type MyInt = int
+
+func main() {
+    var a NewInt
+    var b MyInt
+
+    fmt.Printf("type of a:%T\n", a) //type of a:main.NewInt
+    fmt.Printf("type of b:%T\n", b) //type of b:int
+} 
+```
+
+结果显示a的类型是main.NewInt，表示main包下定义的NewInt类型。b的类型是int。MyInt类型只会在代码中存在，编译完成时并不会有MyInt类型。
+
+##### 结构体
+
+​	go语言中的基础数据类型可以表示一些事物的基本属性，但是当我们想表达一个事物的全部或部分属性时，这时候再用单一的基本数据类型明显就无法满足要求的，go语言提供了一种自定义数据类型，可以封装多个基本数据类型，这种数据类型就叫做结构体（struct）。也就是我们可以通过struct来定义自己的类型了。
+
+​	go语言中通过struct来实现面向对象。
+
+**结构体的定义**
+
+使用type和struct关键字来定义结构体，具体代码格式如下：
+
+```go
+type 类型名 struct {
+  字段名1 字段类型
+  字段名2 字段类型
+  ……,
+}
+```
+
+其中：
+
+```go
+1.类型名：标识自定义结构体的名称，在同一个包中不能重复
+2.字段名：表示结构体字段名。结构体中的字段名必须唯一
+3.字段类型：表示结构体字段的具体类型
+```
+
+举例说明，我们定义一个Cat（猫）结构体，代码如下：
+
+```go
+type Cat struct{
+  name string
+  city string
+  age int8
+  sex string
+}
+// 相同类型的字段也可以写在一行
+type Cat struct{
+  name, city, sex string
+  age int8
+}
+```
+
+这样我们就拥有一个Cat的自定义类型，它有name、city、age、sex三个字段。分别表示姓名、城市、年龄、性别。这样我们使用这个Cat结构体就能够很方便的在程序中表示和存储猫咪的信息了。
+
+语言内置的基础数据类型是用来描述一个值的，而结构体是用来描述一组值的。比如一个人有名字、年龄和居住城市等，本质上是一种聚合型的数据类型。
+
+**结构体实例化**
+
+只有当结构体实例化时，才会真正地分配内存。也就是必须实例化后才能使用结构体的字段。结构体本身也是一种类型，我们可以像声明内置类型一样使用var关键字声明结构体类型。
+
+```go
+var 结构体实例 结构体类型
+```
+
+**基本实例化**
+
+```go
+func main() {
+  // struct
+	cats := Cat{}
+	cats.name = "二狗子"
+	cats.breed = "加菲"
+	cats.age = 3
+	fmt.Printf("cats=%v\n", cats)  // cats={加菲 二狗子 3}
+	fmt.Printf("cats=%#v\n", cats) // cats=main.Cat{breed:"加菲", name:"二狗	子", age:3}
+}
+```
+
+![image-20211124193326123](https://tva1.sinaimg.cn/large/008i3skNly1gwqgx9wxelj30ji01sjrj.jpg)
+
+我们通过.来访问结构体的字段（成员变量），例如cats.breed和cats.name等。
+
+**匿名结构体**
+
+在定义一些临时数据结构等场景下还可以使用匿名结构体。
+
+```go
+func main() {
+  var user struct{Name string; Age int}
+  user.Name = "测试匿名结构体"
+  user.Age = 3
+  fmt.Printf("%#v\n", user)
+}
+```
+
+**创建指针类型结构体**
+
+我们还可以通过使用new关键字对结构体进行实例化，得到的是结构体的地址。格式如下：
+
+```go
+cats := new(Cat)
+fmt.Printf("%T\n", cats)
+fmt.PrintF("cats=%#v\n", cats)
+```
+
+从打印的结果中我们可以看出cats是一个结构体指针。
+
+需要注意的是在go语言中支持对结构体指针直接使用.开访问结构体的成员。
+
+```go
+func main() {
+  cats2 := new(Cat)
+	fmt.Printf("cats2 type=%T\n", cats2) // cats2 type=*main.Cat
+	fmt.Printf("cats2=%#v\n", cats2)     // cats2=&main.Cat{breed:"", 		name:"", age:0}
+	cats2.age = 100
+	cats2.name = "西西"                // cats2=&main.Cat{breed:"", 	name:"", age:0}
+	fmt.Printf("cats2:%#v\n", cats2) // cats2:&main.Cat{breed:"", name:"西西", age:100}
+}
+```
 
 
 
-
-
-
-
+![image-20211124194917068](https://tva1.sinaimg.cn/large/008i3skNly1gwqhdpqxeuj30jm02a74g.jpg)
 
 
 

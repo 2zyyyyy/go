@@ -4,9 +4,21 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"reflect"
 	//_ "go/github.io/2zyyyyy/hello"
 )
+
+// 类型定义
+type NewInt int
+
+// 类型别名
+type MyInt = int
+
+// struct
+type Cat struct {
+	breed string
+	name  string
+	age   int8
+}
 
 // 下划线在代码中
 func underline() {
@@ -223,10 +235,112 @@ func main() {
 	// 指针练习
 	// 程序定义一个int变量num的地址并打印
 	// 将num的地址赋给指针ptr，并通过ptr去修改num的值
-	var num int
-	fmt.Println(&num)
-	ptr := &num
-	fmt.Println(reflect.TypeOf(ptr))
-	*ptr = 20
-	fmt.Println(num)
+	// var num int
+	// fmt.Println(&num)
+	// ptr := &num
+	// fmt.Println(reflect.TypeOf(ptr))
+	// *ptr = 20
+	// fmt.Println(num)
+
+	// scoreMap := make(map[string]int, 8)
+	// scoreMap["张三"] = 90
+	// scoreMap["李四"] = 95
+	// fmt.Println(scoreMap)
+	// fmt.Println(scoreMap["李四"])
+	// fmt.Printf("type of:%T\n", scoreMap)
+
+	// 如果key存在ok为true，v为对应的值；不存在OK=false v为值类型的零值
+	// v, ok := scoreMap["张三1"]
+	// if ok {
+	// 	fmt.Println(v)
+	// } else {
+	// 	fmt.Println("查无此人~")
+	// }
+
+	// scoreMap["王五"] = 100
+	// for k, v := range scoreMap {
+	// 	fmt.Println(k, v)
+	// }
+
+	// userInfo := map[string]string{
+	// 	"userName": "wanli",
+	// 	"passWord": "123456",
+	// }
+	// fmt.Println(userInfo)
+
+	// 按照指定顺序遍历map
+	// rand.Seed(time.Now().UnixNano()) // 初始化随机数种子
+	// scoreMap := make(map[string]int, 200)
+
+	// for i := 0; i < 100; i++ {
+	// 	key := fmt.Sprintf("test%2d", i) // 生产test开头的字符串
+	// 	value := rand.Intn(100)          // 生产0~99随机整数
+	// 	scoreMap[key] = value
+	// }
+
+	// // 取出map中所有的key存入切片keys
+	// keys := make([]string, 0, 200)
+	// for key := range scoreMap {
+	// 	keys = append(keys, key)
+	// }
+	// // 对切片排序
+	// sort.Strings(keys)
+	// // 按照排序后的key遍历map
+	// for _, key := range keys {
+	// 	fmt.Println(key, scoreMap[key])
+	// }
+
+	// 元素为map类型的切片
+	// mapSlice := make([]map[string]string, 3)
+	// for index, value := range mapSlice {
+	// 	fmt.Printf("index:%d value:%v\n", index, value)
+	// }
+	// fmt.Println("after init")
+	// // 对切片中的map元素进行初始化
+	// mapSlice[0] = make(map[string]string, 10)
+	// mapSlice[0]["name"] = "张三"
+	// mapSlice[0]["passWord"] = "123456"
+	// mapSlice[0]["address"] = "未来park"
+	// mapSlice[0]["age"] = "10"
+	// mapSlice[0]["sex"] = "男"
+	// for index, value := range mapSlice {
+	// 	fmt.Printf("index:%d, value:%v\n", index, value)
+	// }
+	// fmt.Printf("------%T\n", mapSlice)
+
+	// 值为切片类型的map
+	// sliceMap := make(map[string][]string, 3)
+	// fmt.Println(sliceMap)
+	// fmt.Println("after init~~~")
+	// key := "杭州"
+	// value, ok := sliceMap[key]
+	// if !ok {
+	// 	value = make([]string, 0, 2)
+	// }
+	// value = append(value, "北京", "上海")
+	// sliceMap[key] = value
+	// fmt.Println(sliceMap)
+	// fmt.Printf("sliceMap Type is:%T, sliceMap[杭州] Type is:%T\n", sliceMap, sliceMap[key])
+
+	// 类型定义和类型别名区别示例
+	// var a NewInt
+	// var b MyInt
+
+	// fmt.Printf("type of a:%T\n", a) // type of a:main.NewInt
+	// fmt.Printf("type of b:%T\n", b) // type of b:int
+
+	// struct
+	cats := Cat{}
+	cats.name = "二狗子"
+	cats.breed = "加菲"
+	cats.age = 3
+	fmt.Printf("cats=%v\n", cats)  // cats={加菲 二狗子 3}
+	fmt.Printf("cats=%#v\n", cats) // cats=main.Cat{breed:"加菲", name:"二狗子", age:3}
+
+	cats2 := new(Cat)
+	fmt.Printf("cats2 type=%T\n", cats2) // cats2 type=*main.Cat
+	fmt.Printf("cats2=%#v\n", cats2)     // cats2=&main.Cat{breed:"", name:"", age:0}
+	cats2.age = 100
+	cats2.name = "西西"                // cats2=&main.Cat{breed:"", name:"", age:0}
+	fmt.Printf("cats2:%#v\n", cats2) // cats2:&main.Cat{breed:"", name:"西西", age:100}
 }
