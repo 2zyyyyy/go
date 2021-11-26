@@ -330,17 +330,30 @@ func main() {
 	// fmt.Printf("type of b:%T\n", b) // type of b:int
 
 	// struct
-	cats := Cat{}
-	cats.name = "二狗子"
-	cats.breed = "加菲"
-	cats.age = 3
-	fmt.Printf("cats=%v\n", cats)  // cats={加菲 二狗子 3}
-	fmt.Printf("cats=%#v\n", cats) // cats=main.Cat{breed:"加菲", name:"二狗子", age:3}
+	// cats := Cat{}
+	// cats.name = "二狗子"
+	// cats.breed = "加菲"
+	// cats.age = 3
+	// fmt.Printf("cats=%v\n", cats)  // cats={加菲 二狗子 3}
+	// fmt.Printf("cats=%#v\n", cats) // cats=main.Cat{breed:"加菲", name:"二狗子", age:3}
 
-	cats2 := new(Cat)
-	fmt.Printf("cats2 type=%T\n", cats2) // cats2 type=*main.Cat
-	fmt.Printf("cats2=%#v\n", cats2)     // cats2=&main.Cat{breed:"", name:"", age:0}
-	cats2.age = 100
-	cats2.name = "西西"                // cats2=&main.Cat{breed:"", name:"", age:0}
-	fmt.Printf("cats2:%#v\n", cats2) // cats2:&main.Cat{breed:"", name:"西西", age:100}
+	// cats2 := new(Cat)
+	// fmt.Printf("cats2 type=%T\n", cats2) // cats2 type=*main.Cat
+	// fmt.Printf("cats2=%#v\n", cats2)     // cats2=&main.Cat{breed:"", name:"", age:0}
+	// cats2.age = 100
+	// cats2.name = "西西"                // cats2=&main.Cat{breed:"", name:"", age:0}
+	// fmt.Printf("cats2:%#v\n", cats2) // cats2:&main.Cat{breed:"", name:"西西", age:100}
+
+	// cats := &Cat{}
+	// fmt.Printf("%T\n", cats)
+	// fmt.Printf("cats:%v\n", cats)
+	// cats.breed = "中华田园猫"
+	// cats.age = 10
+	// cats.name = "技艺"
+	// fmt.Printf("cats:%#v\n", cats)
+
+	cats := &Cat{
+		breed: "美短",
+	}
+	fmt.Printf("cats:%T\n", cats)
 }

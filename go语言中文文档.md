@@ -2078,11 +2078,77 @@ func main() {
 }
 ```
 
-
-
 ![image-20211124194917068](https://tva1.sinaimg.cn/large/008i3skNly1gwqhdpqxeuj30jm02a74g.jpg)
 
+**取结构体的地址实例化**
 
+使用&对结构体取地址操作相当于对该结构体类型进行了一次new实例化操作。
+
+```go
+func main() {
+  cats := &Cat{}
+	fmt.Printf("%T\n", cats)
+	fmt.Printf("cats:%v\n", cats)
+	cats.breed = "中华田园猫"
+	cats.age = 10
+	cats.name = "技艺"
+	fmt.Printf("cats:%#v\n", cats)
+}
+```
+
+![image-20211126103143678](https://tva1.sinaimg.cn/large/008i3skNly1gwsci89lofj30ne02sjrq.jpg)
+
+`cats.breed = "中华田园猫"`其实在底层是`(*cats).breed = "中华田园猫"`,这是go语言帮我们实现的语法糖。
+
+**结构体初始化**
+
+```go
+type Cat struct {
+	breed string
+	name  string
+	age   int8
+}
+
+func main() {
+  cats := Cat{}
+  fmt.Printf("cats:%#v\n", cats)
+}
+```
+
+**使用键值对初始化**
+
+使用键值对对结构体初始化时，键对应结构体的字段，值对应该字段的初始值。
+
+```go
+cats := Cat{
+  breed: "布偶",
+  age: 10,
+  name: "旺财",
+}
+fmt.Printf("cats:%#v\n", cats)
+```
+
+也可以对结构体指针进行键值对初始化，例如：
+
+```go
+cats := &Cat{
+  breed: "布偶",
+  age: 10,
+  name: "旺财",
+}
+fmt.Printf("cats:%#v\n", cats)
+```
+
+当某些字段没有初始值的时候，该字段可以不写。此时，没有指定初始值的字段的值就是该字段类型的零值。
+
+```go
+cats := &Cat{
+  breed: "美短",
+}
+fmt.Printf("cats:%#v\n", cats) // cats:&main.Cat{breed:"美短", name:"", age:0}
+```
+
+**使用值的列表初始化**
 
 
 
