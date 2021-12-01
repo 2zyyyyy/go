@@ -2150,6 +2150,267 @@ fmt.Printf("cats:%#v\n", cats) // cats:&main.Cat{breed:"美短", name:"", age:0}
 
 **使用值的列表初始化**
 
+初始化结构体的时候可以简写，也就是初始化的时候不用写键，直接写值：
+
+```go
+cats := &Cat{
+  "加菲",
+  5,
+  "哈哈",
+}
+fmt.Printf("cats:%#v\n", cats)
+```
+
+使用这种格式初始化时，需要注意：
+
+1. 必须初始化结构体的所有字段
+2. 初始化的填充顺序必须与字段在结构体中声明的顺序一直
+3. 该方式不能和键值初始化方式混用
+
+**结构体内存布局**
+
+```go
+type test struct{
+  a, b, c, d int8
+}
+n := test{
+  1, 2, 3, 4,
+}
+fmt.Printf("n.a %p\n", &n.a)
+fmt.Printf("n.b %p\n", &n.b)
+fmt.Printf("n.c %p\n", &n.c)
+fmt.Printf("n.d %p\n", &n.d)
+```
+
+![image-20211129150732338](https://tva1.sinaimg.cn/large/008i3skNgy1gww1c5iownj307y03ewej.jpg)
+
+**构造函数**
+
+go语言的结构体没有构造函数，我们可以自己实现。例如，下方的代码就实现了一个cat的构造函数。因为struct是值类型，如果结构体比较复杂的话，值拷贝性能开销会比较大，所以该构造函数返回的是结构体指针类型。
+
+```go
+func newCat(breed, name string, age int 8) *Cat{
+  return &Cat{
+    breed: breed,
+    name, name,
+    age, age,
+  }
+}
+```
+
+调用构造函数
+
+```go
+cats := newCat("加菲", "西西" , 3)
+fmt.Printf("%#v\n", cats) // &main.Cat{breed:"加菲", name:"西西", age:3}
+```
+
+**方法和接收者**
+
+go语言中的方法（method）是一种作用于特定类型变量的函数。这种特定类型变量叫做接收者（receiver）。接收者的概念就类似于其他语言中的this或者self。
+
+方法的定义格式如下：
+
+```go
+func(接收者变量 接收者类型) 方法名(参数列表)(返回参数){
+  函数体
+}
+```
+
+其中：
+
+1. 接收者变量：接收者中的参数变量名在命名是，官方建议使用接收者类型名的第一个小写字母，而不是self、this之类的命名。例如Cat类型的接收者变量应该命名为c，Person类型的接收者变量应该命名为p等。
+2. 接收者类型：接收者类型和参数类似，可以使指针类型和非指针类型。
+3. 方法名、参数列表、返回参数：具体格式与函数定义相同。
+
+举例说明：
+
+```go
+// cat结构体
+type Cat struct{
+  breed, name string,
+	age int8
+}
+
+// newCat构造函数
+func newCat(breed, name string, age int8)*Cat {
+  return &Cat{
+    breed: breed,
+    name: name,
+    age: age,
+  }
+  
+// Cat eat的方法
+func (c Cat) Eat(){
+  fmt.Printf("%s每天就是吃吃吃~", c.name)
+}  
+
+  func main() {
+    cats := newCat("加菲", "西西", 3)
+    cats.Eat()
+  }
+```
+
+*方法和函数的区别是：函数不属于任何类型，方法属于特定的类型。*
+
+**指针类型的接收者**
+
+指针类型的接收者由一个结构体的指针组成，由于指针的特性，调用方法的时候修改就守着指针的任意成员变量，在方法结束后，修改都是有效的。这种方式九十分接近于其他语言中面向对象中的this或者self。例如我们为Cat添加一个SetAge方法，来修改实例变量的年龄。
+
+```go
+// setAge设置cat的年龄
+// 使用指针接收者
+func (c *Cat) setAge(newAge int8) {
+	fmt.Printf("我是修改年龄的方法，将%d修改为%d\n", c.age, newAge)
+	c.age = newAge
+}
+```
+
+**值类型接收者**
+
+当方法作用域值类型接受者时，go语言会在代码运行时将接收者的值复制一份。在值类型接收者的方法中可以获取接收者的成员值，但修改操作只是针对副本，无法修改接收者变量本身。
+
+```go
+// 值接收者
+func (c Cat) setName(newName string) {
+	fmt.Printf("我是修改name的方法，将%s修改为%s\n", c.name, newName)
+	c.name = newName
+}
+
+func main() {
+  // 调用构造函数newCat()
+	cats := newCat("加菲", "西西", 3)
+	fmt.Printf("%#v\n", cats)
+	
+  // 使用值类型接收者修改成员变量
+	cats.setName("咚咚咚")
+	fmt.Println(cats.name)
+}
+```
+
+**什么时候应该使用指针类型接收者**
+
+1. 需要修改接收者中的值
+2. 接收者是拷贝代价比较大的大对象
+3. 保证一致性，如果有某个方法使用了指针接收者，那么其他的方法也应该使用指针接收者
+
+**任意类型添加方法**
+
+在go语言中，接收者的类型可以是任何类型，不仅仅是结构体，任何类型都可以拥有方法。举个例子，我们基于内置的int类型使用type关键字可以定义新的自定义类型，然后为我们的自定义类型添加方法。
+
+```go
+// MyString 将string定义为自定义MyString类型
+type MyString string
+
+// 自定义类型MyString的方法
+func (m MyString) OutPut() {
+	fmt.Println("Hello, 我是一个string。")
+}
+
+func main() {
+  var str MyString
+	str.OutPut()
+	str = "test"
+	fmt.Printf("%#v  %T\n", str, str) // "test"  main.MyString
+}
+```
+
+*注意事项：非本地类型不能定义方法，也就是说我们不能给别的包的类型定义方法。*
+
+**结构体匿名字段**
+
+结构体允许其成员字段再声明时没有字段名而只有类型，这种没有名字的字段就称为你名字短。
+
+```go
+// Cat 结构体Cat类型
+type Cat struct {
+	string
+	int // 匿名字段
+}
+func main() {
+  cats := Cat{
+    "加菲,"
+    11,
+  }
+  fmt.Printf("%#v\n", cats)
+  fmt.Println(cats.string, cats.int)
+}
+```
+
+匿名字段默认采用类型名作为字段名，结构体要求字段名称必须唯一，因此一个结构体中同种类型的匿名字段只能有一个。
+
+**嵌套结构体**
+
+一个结构体中可以嵌套包含另一个结构体或结构体指针。
+
+```go
+// struct
+type Cat struct {
+	breed   string
+	name    string
+	age     int8
+	Address Address
+}
+
+// 结构体嵌套
+type Address struct {
+	Province, City, County string
+}
+
+func main() {
+  cats := Cat{
+		"加菲",
+		"西西",
+		3,
+		Address{
+			"浙江省",
+			"杭州市",
+			"拱墅区",
+		},
+	}
+	fmt.Printf("%#v\n", cats) // main.Cat{breed:"加菲", name:"西西", age:3, Address:main.Address{Province:"浙江省", City:"杭州市", County:"拱墅区"}}
+}
+```
+
+**嵌套匿名结构体**
+
+```go
+type Address struct {
+	Province, City, County string
+}
+
+// 嵌套匿名结构体
+type User struct {
+	name    string
+	age     int
+	Address // 匿名结构体字段 只有类型没有字段名
+}
+func main() {
+  var user User
+	user.age = 10
+	user.name = "嵌套匿名结构体"
+	user.Address.Province = "浙江省" //通过匿名结构体.字段名访问
+	user.City = "杭州市"             // 直接访问匿名结构体的字段名
+	fmt.Printf("%#v\n", user) // main.User{name:"嵌套匿名结构体", age:10, Address:main.Address{Province:"浙江省", City:"杭州市", County:""}}
+}
+```
+
+当访问结构体成员是先会在结构体中查找该字段，找不到再去匿名结构体中去查找
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

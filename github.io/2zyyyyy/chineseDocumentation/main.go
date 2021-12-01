@@ -10,14 +10,33 @@ import (
 // 类型定义
 type NewInt int
 
+type MyString string
+
 // 类型别名
 type MyInt = int
 
 // struct
 type Cat struct {
-	breed string
-	name  string
-	age   int8
+	breed   string
+	name    string
+	age     int8
+	Address Address
+}
+
+// 结构体嵌套
+type Address struct {
+	Province, City, County string
+}
+
+// 嵌套匿名结构体
+type User struct {
+	name    string
+	age     int
+	Address // 匿名结构体字段 只有类型没有字段名
+}
+
+type test struct {
+	a, b, c, d int8
 }
 
 // 下划线在代码中
@@ -94,6 +113,37 @@ func modify1(x int) {
 
 func modify2(x *int) {
 	*x = 100
+}
+
+// 构造函数
+func newCat(breed, name string, age int8) *Cat {
+	return &Cat{
+		breed: breed,
+		name:  name,
+		age:   age,
+	}
+}
+
+// 方法和接收者
+func (c Cat) Eat() {
+	fmt.Printf("%s每天就是吃吃吃~\n", c.name)
+}
+
+// 指针接收者
+func (c *Cat) setAge(newAge int8) {
+	fmt.Printf("我是修改年龄的方法，将%d修改为%d\n", c.age, newAge)
+	c.age = newAge
+}
+
+// 值接收者
+func (c Cat) setName(newName string) {
+	fmt.Printf("我是修改name的方法，将%s修改为%s\n", c.name, newName)
+	c.name = newName
+}
+
+// 自定义类型MyString的方法
+func (m MyString) OutPut() {
+	fmt.Println("Hello, 我是一个string。")
 }
 
 func main() {
@@ -352,8 +402,51 @@ func main() {
 	// cats.name = "技艺"
 	// fmt.Printf("cats:%#v\n", cats)
 
-	cats := &Cat{
-		breed: "美短",
-	}
-	fmt.Printf("cats:%T\n", cats)
+	// cats := &Cat{
+	// 	breed: "美短",
+	// }
+	// fmt.Printf("cats:%T\n", cats)
+
+	// n := test{
+	// 	1, 2, 3, 4,
+	// }
+	// fmt.Printf("n.a %p\n", &n.a)
+	// fmt.Printf("n.b %p\n", &n.b)
+	// fmt.Printf("n.c %p\n", &n.c)
+	// fmt.Printf("n.d %p\n", &n.d)
+
+	// 调用构造函数newCat()
+	// cats := newCat("加菲", "西西", 3)
+	// fmt.Printf("%#v\n", cats)
+
+	// // 方法和接收者
+	// cats.Eat()
+	// cats.setAge(127)
+	// fmt.Println(cats.age)
+	// cats.setName("咚咚咚")
+	// fmt.Println(cats.name)
+
+	// var str MyString
+	// str.OutPut()
+	// str = "test"
+	// fmt.Printf("%#v  %T\n", str, str) // "test"  main.MyString
+
+	// cats := Cat{
+	// 	"加菲",
+	// 	"西西",
+	// 	3,
+	// 	Address{
+	// 		"浙江省",
+	// 		"杭州市",
+	// 		"拱墅区",
+	// 	},
+	// }
+	// fmt.Printf("%#v\n", cats)
+
+	var user User
+	user.age = 10
+	user.name = "嵌套匿名结构体"
+	user.Address.Province = "浙江省" //通过匿名结构体.字段名访问
+	user.City = "杭州市"             // 直接访问匿名结构体的字段名
+	fmt.Printf("%#v\n", user)
 }
