@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -25,7 +26,7 @@ type Cat struct {
 
 // 结构体嵌套
 type Address struct {
-	Province, City, County string
+	Province, City, County, Time string
 }
 
 // 嵌套匿名结构体
@@ -33,10 +34,46 @@ type User struct {
 	name    string
 	age     int
 	Address // 匿名结构体字段 只有类型没有字段名
+	Email
+}
+
+type Email struct {
+	Account string
+	Time    string
 }
 
 type test struct {
 	a, b, c, d int8
+}
+
+// 结构体继承
+type Animal struct {
+	name string
+}
+
+func (a *Animal) move() {
+	fmt.Printf("%s会移动！\n", a.name)
+}
+
+type Dog struct {
+	Feet    int8
+	*Animal // 通过嵌套匿名结构体实现继承
+}
+
+func (d Dog) run() {
+	fmt.Printf("%s会跑！\n", d.name)
+}
+
+//结构体与JSON序列化
+type Student struct {
+	ID     int
+	Gender string
+	Name   string
+}
+
+type Class struct {
+	Title    string
+	Students []*Student
 }
 
 // 下划线在代码中
@@ -443,10 +480,60 @@ func main() {
 	// }
 	// fmt.Printf("%#v\n", cats)
 
-	var user User
-	user.age = 10
-	user.name = "嵌套匿名结构体"
-	user.Address.Province = "浙江省" //通过匿名结构体.字段名访问
-	user.City = "杭州市"             // 直接访问匿名结构体的字段名
-	fmt.Printf("%#v\n", user)
+	// var user User
+	// user.age = 10
+	// user.name = "嵌套匿名结构体"
+	// user.Address.Province = "浙江省" //通过匿名结构体.字段名访问
+	// user.City = "杭州市"             // 直接访问匿名结构体的字段名
+	// fmt.Printf("%#v\n", user)
+
+	// 嵌套结构体字段冲突
+	// var user User
+	// user.name = "字段冲突"
+	// user.age = 15
+	// // 指定结构体中的字段给与赋值
+	// user.Address.Time = "address.time"
+	// user.Email.Time = "email.time"
+	// fmt.Printf("%#v\n", user)
+
+	// dog := &Dog{
+	// 	4,
+	// 	&Animal{
+	// 		"嘻嘻",
+	// 	},
+	// }
+	// dog.move()
+	// dog.run()
+	// fmt.Printf("%#v\n", dog)
+
+	// 结构体与JSON序列化
+	class := &Class{
+		Title:    "中队长",
+		Students: make([]*Student, 0, 200),
+	}
+	for i := 0; i < 10; i++ {
+		stu := &Student{
+			Name:   fmt.Sprintf("stu%02d", i),
+			Gender: "男",
+			ID:     i,
+		}
+		class.Students = append(class.Students, stu)
+	}
+	// JSON序列化：结构体——>JSON格式字符串
+	data, err := json.Marshal(class)
+	if err != nil {
+		fmt.Printf("json marshal failed!%s\n", err)
+		return
+	}
+	fmt.Printf("json:%s\n", data)
+
+	// JSON反序列化：JSON格式字符串-->结构体
+	str := `{"Title":"101","Students":[{"ID":0,"Gender":"男","Name":"stu00"},{"ID":1,"Gender":"男","Name":"stu01"},{"ID":2,"Gender":"男","Name":"stu02"},{"ID":3,"Gender":"男","Name":"stu03"},{"ID":4,"Gender":"男","Name":"stu04"},{"ID":5,"Gender":"男","Name":"stu05"},{"ID":6,"Gender":"男","Name":"stu06"},{"ID":7,"Gender":"男","Name":"stu07"},{"ID":8,"Gender":"男","Name":"stu08"},{"ID":9,"Gender":"男","Name":"stu09"}]}`
+	class1 := &Class{}
+	err = json.Unmarshal([]byte(str), class1)
+	if err != nil {
+		fmt.Printf("json unmarshal failed! %s\n", err)
+		return
+	}
+	fmt.Printf("%#v\n", class1)
 }

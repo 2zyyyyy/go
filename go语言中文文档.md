@@ -2397,9 +2397,83 @@ func main() {
 
 当访问结构体成员是先会在结构体中查找该字段，找不到再去匿名结构体中去查找
 
+**嵌套结构体的字段名冲突**
 
+嵌套结构体内部可能存在相同的字段名。这个时候为了避免歧义需要指定具体的内嵌结构体的字段。
 
+```go
+type Address struct {
+	Province, City, County, Time string
+}
 
+type Email struct {
+	Account string
+	Time    string
+}
+
+// 嵌套匿名结构体
+type User struct {
+	name    string
+	age     int
+	Address // 匿名结构体字段 只有类型没有字段名
+	Email
+}
+
+func main() {
+  // 嵌套结构体字段冲突
+	var user User
+	user.name = "字段冲突"
+	user.age = 15
+  // 指定结构体中的字段给与赋值
+	user.Address.Time = "address.time"
+	user.Email.Time = "email.time"
+	fmt.Printf("%#v\n", user)
+}
+```
+
+**结构体中的”继承“**
+
+Go语言中使用结构体也可以实现其他编程语言中面向对象的继承。
+
+```go
+// 结构体继承
+type Animal struct {
+	name string
+}
+
+func (a *Animal) move() {
+	fmt.Printf("%s会移动！\n", a.name)
+}
+
+type Dog struct {
+	Feet    int8
+	*Animal // 通过嵌套匿名结构体实现继承
+}
+
+func (d Dog) run() {
+	fmt.Printf("%s会跑！\n", d.name)
+}
+
+func main() {
+  dog := &Dog{
+		4,
+		&Animal{
+			"嘻嘻",
+		},
+	}
+	dog.move()
+	dog.run()
+	fmt.Printf("%#v\n", dog)
+}
+```
+
+**结构体字段的可见性**
+
+结构体中字段大写开头表示公开访问，小写表示私有（仅在定义当前结构体的包中可访问）。
+
+**结构体与JSON序列化**
+
+JSON(JavaScript Object Notation) 是一种轻量级的数据交换格式。易于人阅读和编写。同时也易于机器解析和生成。JSON键值对是用来保存JS对象的一种方式，键/值对组合中的键名写在前面并用双引号””包裹，使用冒号:分隔，然后紧接着值；多个键值之间使用英文,分隔。
 
 
 
