@@ -1,6 +1,6 @@
 ## Go 语言中文文档记录
 
-### 一、Go基础
+### Go基础
 
 #### 1、Go语言的主要特征
 
@@ -2559,6 +2559,355 @@ func main() {
 }
 ```
 
+**删除map类型的结构体**
+
+```go
+package main
+
+import "fmt"
+
+type Animal struct {
+	name string
+}
+
+func main(){
+  // 删除map类型结构体
+	animals := make(map[int]Animal)
+	animals[0] = Animal{"花花"}
+	animals[1] = Animal{"西西"}
+	fmt.Println(animals)
+
+	delete(animals, 0)
+	fmt.Println(animals)
+}
+```
+
+![image-20211206102927003](https://tva1.sinaimg.cn/large/008i3skNly1gx3wn8wjuoj309g01uaa0.jpg)
+
+**实现map有序输出（面试经常问到）**
+
+```go
+package main
+
+import(
+		"fmt"
+  	"sort"
+)
+
+func main() {
+  // 实现map有序输出
+	mapSort := make(map[int]int)
+	mapSort[10] = 128
+	mapSort[8] = 256
+	mapSort[2] = 64
+	mapSort[9] = 100
+	fmt.Println(mapSort)
+
+	sl := []int{}
+	for k := range mapSort {
+		fmt.Println(k)
+		sl = append(sl, k)
+	}
+	sort.Ints(sl)
+	for i := 0; i < len(mapSort); i++ {
+		fmt.Printf("key:%d, value:%d\n", sl[i], mapSort[sl[i]])
+	}
+}
+```
+
+![image-20211206110854993](https://tva1.sinaimg.cn/large/008i3skNly1gx3xryxuicj30ei07g0t2.jpg)
+
+
+
+### 流程控制
+
+#### 1、条件语句if
+
+**Go语言条件语句：**
+
+​	条件语句需要开发者通过指定一个或多个条件，并通过测试条件是否为true来决定是否执行指定语句，并在条件为false的情况在执行另外的语句。
+
+​	Go语言提供了以下几种条件判断语句：
+
+**if 语句 if 语句 由一个布尔表达式后紧跟一个或多个语句组成。**
+
+Go 编程语言中 if 语句的语法如下：
+
+```go
+1.可省略条件表达式括号。
+2.持初始化语句，可定义代码块局部变量。
+3.代码块左括号必须在条件表达式尾部。
+
+if 布尔表达式 {
+  /* 在布尔表达式为true时执行 */
+}
+```
+
+if 在布尔表达式为 true 时，其后紧跟的语句块执行，如果为 false 则不执行。
+
+```go
+ x := 0
+
+// if x > 10        // Error: missing condition in if statement
+// {
+// }
+
+if n := "abc"; x > 0 {     // 初始化语句未必就是定义变量， 如 println("init") 也是可以的。
+    println(n[2])
+} else if x < 0 {    // 注意 else if 和 else 左大括号位置。
+    println(n[1])
+} else {
+    println(n[0])
+}     
+```
+
+**实例**
+
+```go
+package main
+
+import "fmt"
+
+func main(){
+  // 定义局部变量
+  a := 10
+  if a < 20 {
+    // 如果条件为true
+    fmt.Printf("a小于20\n")
+  }
+  fmt.Printf("a的值为：%d\n", a)
+}
+```
+
+**if … else语句if语句后可以使用可选的else语句，else语句中的表达式在布尔表达式为false时执行**
+
+Go 编程语言中 if…else 语句的语法如下：
+
+```go
+if 布尔表达式 {
+   /* 在布尔表达式为 true 时执行 */
+} else {
+  /* 在布尔表达式为 false 时执行 */
+}
+```
+
+if 在布尔表达式为 true 时，其后紧跟的语句块执行，如果为 false 则执行 else 语句块。
+
+**实例**
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+   /* 局部变量定义 */
+   var a int = 100
+   /* 判断布尔表达式 */
+   if a < 20 {
+       /* 如果条件为 true 则执行以下语句 */
+       fmt.Printf("a 小于 20\n" )
+   } else {
+       /* 如果条件为 false 则执行以下语句 */
+       fmt.Printf("a 不小于 20\n" )
+   }
+   fmt.Printf("a 的值为 : %d\n", a)
+
+}
+```
+
+**if嵌套语句 你可以在if或者else if语句中嵌入一个或多个if或else if语句**
+
+Go 编程语言中 if…else 语句的语法如下：
+
+```go
+if 布尔表达式 1 {
+   /* 在布尔表达式 1 为 true 时执行 */
+   if 布尔表达式 2 {
+      /* 在布尔表达式 2 为 true 时执行 */
+   }
+}
+```
+
+你可以以同样的方式在 if 语句中嵌套 else if…else 语句
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+   /* 定义局部变量 */
+   var a int = 100
+   var b int = 200
+   /* 判断条件 */
+   if a == 100 {
+       /* if 条件语句为 true 执行 */
+       if b == 200 {
+          /* if 条件语句为 true 执行 */
+          fmt.Printf("a 的值为 100 ， b 的值为 200\n" )
+       }
+   }
+   fmt.Printf("a 值为 : %d\n", a )
+   fmt.Printf("b 值为 : %d\n", b )
+}     
+```
+
+#### 2、条件语句switch
+
+​	switch 语句用于基于不同条件执行不同动作，每一个 case 分支都是唯一的，从上直下逐一测试，直到匹配为止。
+​	Golang switch 分支表达式可以是任意类型，不限于常量。可省略 break，默认自动终止。
+
+**语法**
+
+Go 编程语言中 switch 语句的语法如下：
+
+```go
+switch var1 {
+    case val1:
+        ...
+    case val2:
+        ...
+    default:
+        ...
+}
+```
+
+变量 var1 可以是任何类型，而 val1 和 val2 则可以是同类型的任意值。类型不被局限于常量或整数，但必须是相同的类型；或者最终结果为相同类型的表达式。
+您可以同时测试多个可能符合条件的值，使用逗号分割它们，例如：case val1, val2, val3。
+
+**实例**
+
+```go
+// switch
+	grade := "B"
+	// marks := 90
+	var marks int
+
+	switch marks {
+	case 90:
+		grade = "A"
+	case 80:
+		grade = "B"
+	case 60, 70:
+		grade = "C"
+	case 50:
+		grade = "E"
+	default:
+		grade = "D"
+	}
+	fmt.Println(grade, marks)
+
+	switch {
+	case grade == "A":
+		fmt.Printf("优秀：%s\n", grade)
+	case grade == "B", grade == "C":
+		fmt.Printf("良好：%s\n", grade)
+	case grade == "D":
+		fmt.Printf("及格：%s\n", grade)
+	case grade == "E":
+		fmt.Printf("不及格：%s\n", grade)
+	default:
+		fmt.Printf("及格：%s\n", grade)
+	}
+```
+
+**Type Switch**
+
+switch 语句还可以被用于 type-switch 来判断某个 interface 变量中实际存储的变量类型。
+
+Type Switch语法：
+
+```go
+switch x.(Type){
+  case type:
+  	statement(s)
+  case type:
+  	statement(s)
+  // 你可以定义任意个数的case
+  default: // 可选
+  	statement(s)
+}
+```
+
+**实例**
+
+```go
+// type switch
+	var x interface{}
+	// 写法1
+	switch i := x.(type) {
+	case nil:
+		fmt.Printf("x的类型为:%T\n", i)
+	case int:
+		fmt.Println("x是int类型")
+	case float64:
+		fmt.Println("x是float64类型")
+	case func(int):
+		fmt.Println("x是fun(int)类型")
+	case bool, string:
+		fmt.Println("x是bool或string类型")
+	default:
+		fmt.Println("??未知类型")
+	}
+
+	// 写法2
+	j := 0
+	switch j {
+	case 0:
+	case 1:
+		fmt.Println("1")
+	case 2:
+		fmt.Println("2")
+	default:
+		fmt.Println("default")
+	}
+
+	// 写法3
+	k := 0
+	switch k {
+	case 0:
+		println("fallthrough")
+		fallthrough
+		/*
+		   Go的switch非常灵活，表达式不必是常量或整数，执行的过程从上至下，直到找到匹配项；
+		   而如果switch没有表达式，它会匹配true。
+		   Go里面switch默认相当于每个case最后带有break，
+		   匹配成功后不会自动向下执行其他case，而是跳出整个switch,
+		   但是可以使用fallthrough强制执行后面的case代码。
+		*/
+	case 1:
+		fmt.Println("1")
+	case 2:
+		fmt.Println("2")
+	default:
+		fmt.Println("default")
+	}
+
+	//写法三
+	var m = 0
+	switch m {
+	case 0, 1:
+		fmt.Println("1")
+	case 2:
+		fmt.Println("2")
+	default:
+		fmt.Println("default")
+	}
+
+	//写法四
+	var n = 0
+	switch { //省略条件表达式，可当 if...else if...else
+	case n > 0 && n < 10:
+		fmt.Println("i > 0 and i < 10")
+	case n > 10 && n < 20:
+		fmt.Println("i > 10 and i < 20")
+	default:
+		fmt.Println("default")
+	}
+```
+
+![image-20211206201310815](https://tva1.sinaimg.cn/large/008i3skNly1gx4dib55idj30ck04aaa2.jpg)
 
 
 
@@ -2566,6 +2915,61 @@ func main() {
 
 
 
+
+
+
+
+
+
+
+
+### 3、条件语句select
+
+
+
+### 4、循环语句for
+
+
+
+#### 5、循环语句range
+
+
+
+#### 6、循环控制Goto、Break、Continue
+
+
+
+
+
+### 函数
+
+
+
+
+
+### 方法
+
+
+
+### 面向对象
+
+
+
+
+
+### 网络编程
+
+
+
+### 并发编程
+
+
+
+### 数据操作
+
+
+
+### 常用标准库
 
 
 

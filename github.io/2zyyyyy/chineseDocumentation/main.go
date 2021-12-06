@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -538,14 +537,155 @@ func main() {
 	// fmt.Printf("%#v\n", class1)
 
 	// 结构体标签
-	student := &Student{
-		ID:     1001,
-		Gender: "女",
-		Name:   "小丑杰克",
+	// student := &Student{
+	// 	ID:     1001,
+	// 	Gender: "女",
+	// 	Name:   "小丑杰克",
+	// }
+	// data, err := json.Marshal(student)
+	// if err != nil {
+	// 	fmt.Printf("json marshal failed, err:%s\n", err)
+	// }
+	// fmt.Printf("json:%s\n", data)
+
+	// 删除map类型结构体
+	// animals := make(map[int]Animal)
+	// animals[0] = Animal{"花花"}
+	// animals[1] = Animal{"西西"}
+	// fmt.Println(animals)
+
+	// delete(animals, 0)
+	// fmt.Println(animals)
+
+	// 实现map有序输出
+	// mapSort := make(map[int]int)
+	// mapSort[10] = 128
+	// mapSort[8] = 256
+	// mapSort[2] = 64
+	// mapSort[9] = 100
+	// fmt.Println(mapSort)
+
+	// sl := []int{}
+	// for k := range mapSort {
+	// 	fmt.Println(k)
+	// 	sl = append(sl, k)
+	// }
+	// sort.Ints(sl)
+	// fmt.Println(sl)
+	// for i := 0; i < len(mapSort); i++ {
+	// 	fmt.Printf("key:%d, value:%d\n", sl[i], mapSort[sl[i]])
+	// }
+
+	// 定义局部变量
+	// a := 100
+	// if a < 20 {
+	// 	// 如果条件为true
+	// 	fmt.Printf("a小于20\n")
+	// }
+	// fmt.Printf("a的值为：%d\n", a)
+
+	// // switch
+	// grade := "B"
+	// // marks := 90
+	// var marks int
+
+	// switch marks {
+	// case 90:
+	// 	grade = "A"
+	// case 80:
+	// 	grade = "B"
+	// case 60, 70:
+	// 	grade = "C"
+	// case 50:
+	// 	grade = "E"
+	// default:
+	// 	grade = "D"
+	// }
+	// fmt.Println(grade, marks)
+
+	// switch {
+	// case grade == "A":
+	// 	fmt.Printf("优秀：%s\n", grade)
+	// case grade == "B", grade == "C":
+	// 	fmt.Printf("良好：%s\n", grade)
+	// case grade == "D":
+	// 	fmt.Printf("及格：%s\n", grade)
+	// case grade == "E":
+	// 	fmt.Printf("不及格：%s\n", grade)
+	// default:
+	// 	fmt.Printf("及格：%s\n", grade)
+	// }
+
+	// type switch
+	var x interface{}
+	// 写法1
+	switch i := x.(type) {
+	case nil:
+		fmt.Printf("x的类型为:%T\n", i)
+	case int:
+		fmt.Println("x是int类型")
+	case float64:
+		fmt.Println("x是float64类型")
+	case func(int):
+		fmt.Println("x是fun(int)类型")
+	case bool, string:
+		fmt.Println("x是bool或string类型")
+	default:
+		fmt.Println("??未知类型")
 	}
-	data, err := json.Marshal(student)
-	if err != nil {
-		fmt.Printf("json marshal failed, err:%s\n", err)
+
+	// 写法2
+	j := 0
+	switch j {
+	case 0:
+	case 1:
+		fmt.Println("1")
+	case 2:
+		fmt.Println("2")
+	default:
+		fmt.Println("default")
 	}
-	fmt.Printf("json:%s\n", data)
+
+	// 写法3
+	k := 0
+	switch k {
+	case 0:
+		println("fallthrough")
+		fallthrough
+		/*
+		   Go的switch非常灵活，表达式不必是常量或整数，执行的过程从上至下，直到找到匹配项；
+		   而如果switch没有表达式，它会匹配true。
+		   Go里面switch默认相当于每个case最后带有break，
+		   匹配成功后不会自动向下执行其他case，而是跳出整个switch,
+		   但是可以使用fallthrough强制执行后面的case代码。
+		*/
+	case 1:
+		fmt.Println("1")
+	case 2:
+		fmt.Println("2")
+	default:
+		fmt.Println("default")
+	}
+
+	//写法三
+	var m = 0
+	switch m {
+	case 0, 1:
+		fmt.Println("1")
+	case 2:
+		fmt.Println("2")
+	default:
+		fmt.Println("default")
+	}
+
+	//写法四
+	var n = 0
+	switch { //省略条件表达式，可当 if...else if...else
+	case n > 0 && n < 10:
+		fmt.Println("i > 0 and i < 10")
+	case n > 10 && n < 20:
+		fmt.Println("i > 10 and i < 20")
+	default:
+		fmt.Println("default")
+	}
 }
