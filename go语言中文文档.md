@@ -2909,21 +2909,104 @@ switch x.(Type){
 
 ![image-20211206201310815](https://tva1.sinaimg.cn/large/008i3skNly1gx4dib55idj30ck04aaa2.jpg)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### 3、条件语句select
+
+**select语句**
+
+​	select语句类似于switch语句，但是select会随机执行一个可运行的case。如果没有case可运行，他将阻塞，知道有case可运行。
+
+​	select是go中的一个控制结构，类似于用于通信的switch语句。每个case必须是一个通信操作，要么是发送要么是接收。
+
+​	select随机执行一个可运行的case。如果没有case可运行，他将阻塞，知道有case可运行。一个默认的子句应该总是可运行的。
+
+**语法**
+
+Go 编程语言中 select 语句的语法如下：
+
+```go
+select{
+  case communication clause:
+  	statement(s)
+  case communication clause:
+  	statement(s)
+  // 你可以定义任意数量的case
+  default: // 可选
+  	statement(s)
+}
+```
+
+以下描述了select语句的语法:
+
+```go
+1.每个case都必须是一个通信。
+2.所有channel表达式都会被求值。
+3.所有被发送的表达式都会被求值。
+4.如果任意某个通信可以进行，它就执行；其他被忽略。
+5.如果有多个case都可以运行，select会随机公平地选出一个执行，其他不会执行。
+否组：
+1.如果有default语句，则执行该语句。
+2.如果没有default语句，select将阻塞，知道某个通信可以运行；go不会重新对channel或值进行求值。
+```
+
+**实例**
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+  // select
+	var c1, c2, c3 chan int
+	var i1, i2 int
+	fmt.Printf("c1:%v, c2:%v, c3:%v\n", c1, c2, c3)
+	fmt.Printf("i1:%d, i2:%d\n", i1, i2)
+	select {
+	case i1 = <-c1:
+		fmt.Printf("received %d from c1\n", i1)
+	case c2 <- i2:
+		fmt.Printf("sent %d to c2\n", i2)
+	case i3, ok := <-c3:
+		fmt.Printf("i3:%d\n", i3)
+		if ok {
+			fmt.Printf("received %v from c3\n", i3)
+		} else {
+			fmt.Printf("c3 is closed\n")
+		}
+	default:
+		fmt.Printf("no communivation\n")
+	}
+}
+```
+
+![image-20211207165158021](https://tva1.sinaimg.cn/large/008i3skNly1gx5db7gxqqj30dq02oq2z.jpg)
+
+select可以监听channel的数据流动
+
+select的用法与switch预发非常类似，由select开始的一个新的选择块，每个选择条件由case语句来描述。与switch语句可以选择任何使用相等比较的条件相比，select有比较多的限制，其中最大的一条限制就是每个case语句里必须是一个IO操作。
+
+```go
+select{ // 不停的在这里检测
+  case <-chan1: // 检测有没有数据可以读
+  // 如果chan成功读取到数据，则进行该case处理语句
+  case chan2 <- 1: // 检测有没有数据可以写
+  // 如果成功向chan2写入数据，则进行该case处理语句
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

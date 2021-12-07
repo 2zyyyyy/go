@@ -617,75 +617,96 @@ func main() {
 	// }
 
 	// type switch
-	var x interface{}
-	// 写法1
-	switch i := x.(type) {
-	case nil:
-		fmt.Printf("x的类型为:%T\n", i)
-	case int:
-		fmt.Println("x是int类型")
-	case float64:
-		fmt.Println("x是float64类型")
-	case func(int):
-		fmt.Println("x是fun(int)类型")
-	case bool, string:
-		fmt.Println("x是bool或string类型")
-	default:
-		fmt.Println("??未知类型")
-	}
+	// var x interface{}
+	// // 写法1
+	// switch i := x.(type) {
+	// case nil:
+	// 	fmt.Printf("x的类型为:%T\n", i)
+	// case int:
+	// 	fmt.Println("x是int类型")
+	// case float64:
+	// 	fmt.Println("x是float64类型")
+	// case func(int):
+	// 	fmt.Println("x是fun(int)类型")
+	// case bool, string:
+	// 	fmt.Println("x是bool或string类型")
+	// default:
+	// 	fmt.Println("??未知类型")
+	// }
 
-	// 写法2
-	j := 0
-	switch j {
-	case 0:
-	case 1:
-		fmt.Println("1")
-	case 2:
-		fmt.Println("2")
-	default:
-		fmt.Println("default")
-	}
+	// // 写法2
+	// j := 0
+	// switch j {
+	// case 0:
+	// case 1:
+	// 	fmt.Println("1")
+	// case 2:
+	// 	fmt.Println("2")
+	// default:
+	// 	fmt.Println("default")
+	// }
 
-	// 写法3
-	k := 0
-	switch k {
-	case 0:
-		println("fallthrough")
-		fallthrough
-		/*
-		   Go的switch非常灵活，表达式不必是常量或整数，执行的过程从上至下，直到找到匹配项；
-		   而如果switch没有表达式，它会匹配true。
-		   Go里面switch默认相当于每个case最后带有break，
-		   匹配成功后不会自动向下执行其他case，而是跳出整个switch,
-		   但是可以使用fallthrough强制执行后面的case代码。
-		*/
-	case 1:
-		fmt.Println("1")
-	case 2:
-		fmt.Println("2")
-	default:
-		fmt.Println("default")
-	}
+	// // 写法3
+	// k := 0
+	// switch k {
+	// case 0:
+	// 	println("fallthrough")
+	// 	fallthrough
+	// 	/*
+	// 	   Go的switch非常灵活，表达式不必是常量或整数，执行的过程从上至下，直到找到匹配项；
+	// 	   而如果switch没有表达式，它会匹配true。
+	// 	   Go里面switch默认相当于每个case最后带有break，
+	// 	   匹配成功后不会自动向下执行其他case，而是跳出整个switch,
+	// 	   但是可以使用fallthrough强制执行后面的case代码。
+	// 	*/
+	// case 1:
+	// 	fmt.Println("1")
+	// case 2:
+	// 	fmt.Println("2")
+	// default:
+	// 	fmt.Println("default")
+	// }
 
-	//写法三
-	var m = 0
-	switch m {
-	case 0, 1:
-		fmt.Println("1")
-	case 2:
-		fmt.Println("2")
-	default:
-		fmt.Println("default")
-	}
+	// //写法三
+	// var m = 0
+	// switch m {
+	// case 0, 1:
+	// 	fmt.Println("1")
+	// case 2:
+	// 	fmt.Println("2")
+	// default:
+	// 	fmt.Println("default")
+	// }
 
-	//写法四
-	var n = 0
-	switch { //省略条件表达式，可当 if...else if...else
-	case n > 0 && n < 10:
-		fmt.Println("i > 0 and i < 10")
-	case n > 10 && n < 20:
-		fmt.Println("i > 10 and i < 20")
+	// //写法四
+	// var n = 0
+	// switch { //省略条件表达式，可当 if...else if...else
+	// case n > 0 && n < 10:
+	// 	fmt.Println("i > 0 and i < 10")
+	// case n > 10 && n < 20:
+	// 	fmt.Println("i > 10 and i < 20")
+	// default:
+	// 	fmt.Println("default")
+	// }
+
+	// select
+	var c1, c2, c3 chan int
+	var i1, i2 int
+	fmt.Printf("c1:%v, c2:%v, c3:%v\n", c1, c2, c3)
+	fmt.Printf("i1:%d, i2:%d\n", i1, i2)
+	select {
+	case i1 = <-c1:
+		fmt.Printf("received %d from c1\n", i1)
+	case c2 <- i2:
+		fmt.Printf("sent %d to c2\n", i2)
+	case i3, ok := <-c3:
+		fmt.Printf("i3:%d\n", i3)
+		if ok {
+			fmt.Printf("received %v from c3\n", i3)
+		} else {
+			fmt.Printf("c3 is closed\n")
+		}
 	default:
-		fmt.Println("default")
+		fmt.Printf("no communivation\n")
 	}
 }
