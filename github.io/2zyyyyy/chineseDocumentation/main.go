@@ -182,6 +182,11 @@ func (m MyString) OutPut() {
 	fmt.Println("Hello, 我是一个string。")
 }
 
+func length(s string) int {
+	fmt.Println("call length")
+	return len(s)
+}
+
 func main() {
 	// import使用了'_',则会编译报错：./main.go:9:2: undefined: hello
 	// hello.Hello()
@@ -690,23 +695,114 @@ func main() {
 	// }
 
 	// select
-	var c1, c2, c3 chan int
-	var i1, i2 int
-	fmt.Printf("c1:%v, c2:%v, c3:%v\n", c1, c2, c3)
-	fmt.Printf("i1:%d, i2:%d\n", i1, i2)
-	select {
-	case i1 = <-c1:
-		fmt.Printf("received %d from c1\n", i1)
-	case c2 <- i2:
-		fmt.Printf("sent %d to c2\n", i2)
-	case i3, ok := <-c3:
-		fmt.Printf("i3:%d\n", i3)
-		if ok {
-			fmt.Printf("received %v from c3\n", i3)
-		} else {
-			fmt.Printf("c3 is closed\n")
-		}
-	default:
-		fmt.Printf("no communivation\n")
-	}
+	// var c1, c2, c3 chan int
+	// var i1, i2 int
+	// fmt.Printf("c1:%v, c2:%v, c3:%v\n", c1, c2, c3)
+	// fmt.Printf("i1:%d, i2:%d\n", i1, i2)
+	// select {
+	// case i1 = <-c1:
+	// 	fmt.Printf("received %d from c1\n", i1)
+	// case c2 <- i2:
+	// 	fmt.Printf("sent %d to c2\n", i2)
+	// case i3, ok := <-c3:
+	// 	fmt.Printf("i3:%d\n", i3)
+	// 	if ok {
+	// 		fmt.Printf("received %v from c3\n", i3)
+	// 	} else {
+	// 		fmt.Printf("c3 is closed\n")
+	// 	}
+	// default:
+	// 	fmt.Printf("no communivation\n")
+	// }
+
+	// s := "abc"
+	// println(s[0])
+	// for i, n := 0, len(s); i < n; i++ { // 常见的 for 循环，支持初始化语句。
+	// 	println(s[i])
+	// }
+
+	// n := len(s)
+	// for n > 0 { // 替代 while (n > 0) {}
+	// 	n--
+	// 	println(s[n]) // 替代 for (; n > 0;) {}
+	// }
+
+	// for { // 替代 while (true) {}
+	// 	println(s) // 替代 for (;;) {}
+	// }
+
+	// str := "abcd"
+	// for i, n := 0, length(str); i < n; i++ { // 避免多次调用length函数
+	// 	fmt.Println(i, str[i])
+	// }
+	// a := 0
+	// count := 0
+	// b := 15
+
+	// numbers := [5]int{1, 2, 3, 4, 5}
+	// fmt.Println(len(numbers))
+
+	// // for 1
+	// for a := 0; a < 10; a++ {
+	// 	fmt.Printf("a=:%d\n", a)
+	// 	count++
+	// }
+	// fmt.Printf("for循环1执行了:%d次\n", count)
+
+	// count = 0
+	// // for 2
+	// for a < b {
+	// 	a++
+	// 	fmt.Printf("a的值为：%d\n", a)
+	// 	count++
+	// }
+	// fmt.Printf("for循环2执行了:%d次\n", count)
+
+	// // for 3
+	// for i, x := range numbers {
+	// 	i++
+	// 	fmt.Printf("第%d位x的值为%d\n", i, x)
+	// }
+
+	// 双层循环筛选素数
+	// var i, j int
+	// for i = 2; i < 10; i++ {
+	// 	fmt.Printf("i=%d\n", i)
+	// 	for j = 2; j <= (i / j); j++ {
+	// 		// fmt.Println(j)
+	// 		if i%j == 0 {
+	// 			break // 如果发现因子，则不是素数
+	// 		}
+	// 	}
+	// 	if j > (i / j) {
+	// 		fmt.Printf("%d  是素数\n", i)
+	// 	}
+	// }
+
+	// range会复制对象
+	// a := [3]int{1, 2, 3}
+
+	// for i, v := range a { // i,v都是从复制品中取出
+	// 	if i == 1 {
+	// 		// 在修改前我们先修改原数组
+	// 		a[1], a[2] = 900, 1000
+	// 		fmt.Println(a) // 确认修改是有效的, 输出[1, 900, 1000]
+	// 	}
+	// 	a[i] = v + 100
+	// }
+	// fmt.Println(a) // 输出[101, 102, 103]
+
+	// 改用引用类型，其底层数据不会被复制
+	// s := []int{4, 5, 6, 7, 8}
+
+	// for i, v := range s { // 复制struct slice（pointer，len，cap）
+	// 	if i == 0 {
+	// 		fmt.Println(s)
+	// 		s = s[:3]    // 对slice的修改 不会影响range
+	// 		s[2] = 10086 // 对底层数据的修改
+	// 		fmt.Printf("在range中修改s, s:%v\n", s)
+	// 	}
+	// 	fmt.Println(i, v)
+	// }
+	// fmt.Printf("s:%v\n", s)
 }

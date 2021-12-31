@@ -3009,39 +3009,1032 @@ select{ // 不停的在这里检测
 
 **Go select的使用及典型用法**
 
+**基本使用**
 
+​	select是go的一个控制结构，类似于switch语句，用户处理异步io操作。select会监听case语句中channel的读写操作，当case中的channel读写操作为非阻塞状态（即能读写）时，将会触发相应的动作。
 
+​	select中的case语句必须是一个channel操作。
 
+​	select中的default子句总是可运行的。
 
+​	如果有多个case都可以运行，select会随机公平地选出一个执行，其他不会执行。
 
+​	如果没有可运行的case语句，且有default语句，那么就会执行default的动作。
 
+​	如果没有可运行的case语句，且没有default语句，select将阻塞，知道某个case通信可以运行。
 
+例如：
 
+```go
+func main() {
+  var c1, c2, c3 chan int
+  var i1, i2 int
+  select{
+    case i1 = <- c1:
+    	fmt.Printf("received ", i1, " from c1\n")
+      case c2 <- i2:
+         fmt.Printf("sent ", i2, " to c2\n")
+      case i3, ok := (<-c3):  // same as: i3, ok := <-c3
+         if ok {
+            fmt.Printf("received ", i3, " from c3\n")
+         } else {
+            fmt.Printf("c3 is closed\n")
+         }
+      default:
+         fmt.Printf("no communication\n")
+   }    
+}
 
+//输出：no communication 
+```
 
+**典型用法**
 
+1. 超时判断
 
+```go
+//比如在下面的场景中，使用全局resChan来接收response，如果时间超过3S,resChan中还没有数据返回，则第二条case将执行
+var resChan = make(chan int)
+// do request
+func test() {
+  select{
+    case data := <-resChan:
+    	doData(data)
+    case <- time.After(time.Second * 3)
+    	fmt.Println("request time out")
+  }
+  
+  func doData(data int){
+    ……
+  }
+}
+```
 
+2. 退出
 
+   ```go
+   // 主线程(协程)中如下：
+   var shouldQuit = make(chan struct{})
+   func main() {
+     {
+       // loop
+     }
+     // ...out of the loop
+     select{
+       case <-c.shouldQuit:
+               cleanUp()
+               return
+           default:
+           }
+       //...
+   }
+   
+   //再另外一个协程中，如果运行遇到非法操作或不可处理的错误，就向shouldQuit发送数据通知程序停止运行
+   close(shouldQuit)
+   ```
 
+3. 判断channel是否阻塞
+
+   ```go
+   // 在某些情况下是存在不希望channel缓存满了的需求的，可以用如下方法判断
+   ch := make(chan int, 5)
+   // ...
+   data := 0
+   select{
+     case ch <- data:
+     default:
+     	// 做相应操作，比如丢弃data。
+   }
+   ```
 
 ### 4、循环语句for
 
+**Golang for 支持三中循环方式，包括类似while的语法**
 
+for循环是一个循环控制结构，可以执行指定次数的循环。
+
+**语法**
+
+Go语言的for有3种形式，只有其中的一种使用分号。
+
+```go
+1.for init; condition; post{ }
+2.for codition{ }
+3.for { }
+
+init:一般为赋值表达式，给控制变量赋初值
+condition：关系表达式或逻辑表达式，循环控制条件；
+post：一般为赋值表达式，给控制变量增量或减量。
+for语句执行过程如下：
+1.先对表达式init赋初值；
+2.判别赋值表达式init是否满足给定condition条件，若其值为真，满足循环条件，则执行循环体内语句，然后执行post，进入第二次循环，在判别condition；否则判断condition的值为假，不满足条件，就终止for循环，执行循环体外语句。
+```
+
+```go
+str := "abc"
+for i, n := 0, len(str); i < n; i++ { // 常见的for循环，支持初始化语句
+  println(s[i])
+}
+
+n := len(s)
+for n >0 { // 替代while(n>0) {}
+  n--
+  println(str[n])
+}
+
+for { // 替代 while (true) {}
+		println(s) // 替代 for (;;) {}
+}
+```
+
+不要期望编译器能理解你的想法，在初始化语句中计算出全部结果是个好主意。
+
+```go
+func length(s string) int {
+  println("call length.")
+  return len(s)
+}
+
+func main() {
+  s := "abcd"
+  for i, n := 0, lenth(s); i < n; i++{ // 避免多次调用length函数
+    println(i, s[i])
+  }
+}
+```
+
+**实例**
+
+```go
+func main() {
+  a := 0
+	count := 0
+	b := 15
+
+	numbers := [5]int{1, 2, 3, 4, 5}
+	fmt.Println(len(numbers))
+
+	// for 1
+	for a := 0; a < 10; a++ {
+		fmt.Printf("a=:%d\n", a)
+		count++
+	}
+	fmt.Printf("for循环1执行了:%d次\n", count)
+
+	count = 0
+	// for 2
+	for a < b {
+		a++
+		fmt.Printf("a的值为：%d\n", a)
+		count++
+	}
+	fmt.Printf("for循环2执行了:%d次\n", count)
+
+	// for 3
+	for i, x := range numbers {
+		i++
+		fmt.Printf("第%d位x的值为%d\n", i, x)
+	}
+}
+
+// 输出
+5
+a=:0
+a=:1
+a=:2
+a=:3
+a=:4
+a=:5
+a=:6
+a=:7
+a=:8
+a=:9
+for循环1执行了:10次
+a的值为：1
+a的值为：2
+a的值为：3
+a的值为：4
+a的值为：5
+a的值为：6
+a的值为：7
+a的值为：8
+a的值为：9
+a的值为：10
+a的值为：11
+a的值为：12
+a的值为：13
+a的值为：14
+a的值为：15
+for循环2执行了:15次
+第1位x的值为1
+第2位x的值为2
+第3位x的值为3
+第4位x的值为4
+第5位x的值为5
+```
+
+**嵌套循环**
+
+在for循环中嵌套一个或多个for循环。
+
+**语法**
+
+```go
+for [condition | (init; condition;increment)| Range]
+{
+  for [condition |(init; condition; increment) | Range]
+  {
+    statement(s)
+  }
+  statement(s)
+}
+```
+
+**实例**
+
+以下实例使用循环嵌套来输出2-100间的素数：
+
+```go
+func main() {
+  var i, j int
+	for i = 2; i < 10; i++ {
+		fmt.Printf("i=%d\n", i)
+		for j = 2; j <= (i / j); j++ {
+			// fmt.Println(j)
+			if i%j == 0 {
+				break // 如果发现因子，则不是素数
+			}
+		}
+		if j > (i / j) {
+			fmt.Printf("%d  是素数\n", i)
+		}
+	}
+}
+```
+
+**无限循环**
+
+如过循环中条件语句永远不为 false 则会进行无限循环，我们可以通过 for 循环语句中只设置一个条件表达式来执行无限循环：
+
+```go
+func main() {
+    for true  {
+        fmt.Printf("这是无限循环。\n");
+    }
+}  
+```
 
 #### 5、循环语句range
 
+​	Golang range类似迭代器操作，返回（索引，值）或（键，值）。
 
+for循环的range格式可以对slice、map、数组、字符串等进行迭代循环。格式如下：
+
+```go
+for k, v := range oldMap{
+  newMap[k] = v
+}
+```
+
+可忽略不想要的返回值，或“_”这个特殊变量。
+
+```go
+func main() {
+  s := "abc"
+  // 忽略2nd value，支持string/array/slice/map
+  for i := range s {
+    println(s[i])
+  }
+  // 忽略index
+  for _, a := range s {
+    println(a)
+  }
+  // 全部忽略 仅迭代
+  for range s{
+    
+  }
+  
+  m := map[string]int{"a": 1, "b":2}
+  // 返回k v
+  for k, v := range m{
+    println(k, v)
+  }
+}
+```
+
+*注意：range会复制对象*
+
+```go
+func main() {
+  a :=[3]int{1, 2, 3}
+  
+  for i, v := range a { // i,v都是从复制品中取出
+    if i == 1 {
+      // 在修改前我们先修改原数组
+      a[1], a[2] = 900, 1000
+      fmt.Println(a) // 确认修改是有效的, 输出[1, 900, 1000]
+    }
+    a[i] = v + 100
+  }
+  fmt.Println(a) // 输出[101, 102, 103]
+}
+```
+
+建议改用引用类型，其底层数据不会被复制。
+
+```go
+func main() {
+  // 改用引用类型，其底层数据不会被复制
+	s := []int{4, 5, 6, 7, 8}
+
+	for i, v := range s { // 复制struct slice（pointer，len，cap）
+		if i == 0 {
+			s = s[:3]    // 对slice的修改 不会影响range
+			s[2] = 10086 // 对底层数据的修改
+		}
+		fmt.Println(i, v)
+	}
+}
+
+// 输出
+0 4
+1 5
+2 10086
+3 7
+4 8
+```
+
+另外两种引用类型map、channel是指针包装，而不像slice是struct。
+
+**for 和 for range有什么区别?**
+
+- 主要是使用场景不同，for可以
+  - 遍历array和slice
+  - 遍历key为整型递增的map
+  - 遍历string
+
+- for range可以完成所有for可以做的事情，却能做到for不能做的，包括
+  - 遍历key为string类型的map并同时获取key和value
+  - 遍历channel
 
 #### 6、循环控制Goto、Break、Continue
 
+循环控制语句
 
+循环控制语句可以控制循环体内语句的执行过程。
+
+GO 语言支持以下几种循环控制语句：
+
+**Goto、Break、Continue**
+
+```go
+1.三个语句都可以配合标签(label)使用
+2.标签名区分大小写，定以后若不使用会造成编译错误
+3.continue、break配合标签(label)可用于多层循环跳出
+4.goto是调整执行位置，与continue、break配合标签(label)的结果并不相同 
+```
 
 
 
 ### 函数
 
+#### 1、函数定义
 
+Golang函数特点
+
+- 无需声明原型
+- 支持不定变参
+- 支持多返回值
+- 支持命名返回参数
+- 支持匿名函数和闭包
+- 函数也是一种类型，一个函数可以赋值给变量
+
+****
+
+- 不支持嵌套（nested），一个包不能有两个名字一样的函数
+- 不支持重载（overload）
+- 不支持默认参数（default parameter）
+
+**函数声明**
+
+函数声明包含一个函数名，参数列表，返回值列表和函数体。如果函数没有返回值，则返回列表可以省略。函数从第一条语句开始执行，直到执行return语句或者执行函数的最后一条语句。
+
+函数可以没有参数或者接收多个参数。
+
+注意类型在变量名之后。
+
+当两个或多个连续的函数命名参数是同一类型，则除了最后一个类型之外，其他都可以省略。
+
+函数可以返回任意数量的返回值。
+
+使用关键字func定义函数，左大括号依旧不能另起一行。
+
+```go
+func test(x, y int, s string)(int, string) {
+  // 类型相同的相邻参数，参数类型可合并。 多返回值必须用括号
+  n := x + y
+  return n, fmt.Sprintf(s, n)
+}
+
+func main() {
+	n, str := functionDemo(1, 2, "测试functionDemo函数~")
+	fmt.Printf("n:%d\nstr:%s\n", n, str)
+}
+```
+
+函数是第一类对象，可作为参数传递。建议将复杂签名定义为函数类型，以便于阅读。
+
+```go
+func test(fn func() int) int {
+	return fn()
+}
+
+// 定义函数类型
+type FormatFunc func(s string, x, y int) string
+
+func format(fn FormatFunc, s string, x, y int) string {
+	return fn(s, x, y)
+}
+
+func main() {
+	functionDemo(1, 2, "测试functionDemo函数~")
+	// fmt.Printf("n:%d\nstr:%s\n", n, str)
+
+	s1 := test(func() int { // 直接将匿名函数当参数
+		return 100
+	})
+	s2 := format(func(s string, x, y int) string {
+		return fmt.Sprintf(s, x, y)
+	}, "%d, %d", 10, 20)
+	fmt.Println(s1, s2)
+}
+
+// 输出
+100 10, 20
+```
+
+有返回值的函数，必须有明确的终止语句，否则会引发编译错误。
+
+你可能会偶尔遇到没有函数体的函数声明，这表示该函数不是以Go实现的。这样的声明定义了函数标识符。
+
+```go
+func Sin(x float64) float //implemented in assembly language
+```
+
+#### 2、参数
+
+函数定义时指出，函数定义时有参数，该变量可称为函数的形参。形参就像定义在函数体内部的变量。
+
+但当调用函数，传递过来的变量就是函数的实参，函数可以通过两种方式来传递参数：
+
+1. 值传递：指在调用函数时将实际参数复制一份传递到函数中，这样在函数中如果对参数进行修改，将不会影响实际参数。
+
+   ```go
+   func swap(x, y int) int {
+     ……
+   }
+   ```
+
+2. 引用传递：是指在调用函数时将实际参数的地址传递到函数中，那么在函数中对参数进行的修改，将会影响到实际参数。
+
+   ```go
+   // 定义相互交换值的函数
+   func swap(x, y *int) {
+     var temp int
+     
+     temp = *x
+     *x = *y
+     *y = temp
+   }
+   
+   func main() {
+   	a, b := 1, 50
+   	swap(&a, &b)
+   	fmt.Printf("a=%v, b=%v\n", a, b)
+   }
+   
+   // 输出
+   a=50, b=1
+   ```
+
+在默认情况下，Go语言使用的是值传递，即在调用过程中不会影响到实际参数。
+
+*注意1：无论是值传递，还是引用传递，传递给函数的都是变量的副本，不过，值传递是值的拷贝。引用传递是地址的拷贝。一般来说，地址拷贝更为高效。而值拷贝取决于拷贝的对象大小，对象越大，则性能越低。*
+
+*注意2：map、slice、chan、指针、interface默认以引用的方式传递。*
+
+不定参传值
+
+就是函数的参数不是固定的，后面的类型是固定的。（可变参数）
+
+Golang可变参数本质上就是slice。只能有一个，且必须是最后一个。
+
+在参数赋值时可以不用一个一个地赋值，可以直接传递一个数组或者切片，特别注意的是在参数后加上…即可。
+
+```go
+func myfun(args ...int) { // 0或多个参数
+  ……
+}
+func add(a int, args ...int) int { // 1个或多个参数
+  ……
+}
+func add(a int, b int, args ...int) { // 2个或多个参数
+  ……
+}
+```
+
+*注意：其中args是一个slice，我们可以通过arg[index]依次访问所有参数，通过len(arg)来判断传递参数的个数。*
+
+任意类型的不定参数：
+
+就是函数的参数和每个参数的类型都不是固定的。
+
+用interface{}传递任意类型数据是Go语言的惯例用法，而且interface{}是类型安全的。
+
+```go
+func myfunc(args ...interface{}) {
+  ……
+}
+```
+
+代码：
+
+```go
+func myfunc(s string, n ...int) string {
+	var x int
+	for _, i := range n {
+		x += i
+	}
+	return fmt.Sprint(s, x)
+}
+
+func main() {
+  fmt.Println(myfunc("sum:", 1, 100, 1000, 10000))
+}
+
+// 输出
+sum:11101
+```
+
+使用slice对象做变参时，必须展开。（slice...）
+
+```go
+func test(s string, n ...int) {
+  var x int
+  for _, i := range n {
+    x += i
+  }
+  return fmt.Sprintf(s, x)
+}
+
+func main() {
+  s := []int{1, 2, 3}
+  res := test("sum:", s...) // slice... 展开slice
+  fmt.Printlf(res)
+}
+
+// 输出
+sum:15
+```
+
+#### 3、返回值
+
+**函数返回值**
+
+`"_"`标识符，用来忽略函数的某个返回值。
+
+Go的返回值可以被命名，并且就像在函数体开头声明的变量那样使用。
+
+返回值的名称应当具有一定意义，可以作为文档使用。
+
+没有参数的return语句将返回各个返回变量的当前值。这种用法被称作“裸”返回。
+
+直接返回语句仅应用当在下面这样的短函数中。在常函数中他们会影响代码的可读性。
+
+```go
+func add(a, b int) (c int) {
+  c = a + b
+  return
+}
+
+func calc(a, b int) (sum int, avg int) {
+  sum = a + b 
+  avg = (a + b) / 2
+  return
+}
+
+func main() {
+  a, b := 1, 2
+  c := add(a, b)
+  sum, avg := calc(a, b)
+  fmt.Println(a, b ,c , sum , avg)
+}
+```
+
+Golang返回值不能用容器对象接收多返回值。只能用多个变量，或`“_”`忽略。
+
+```go
+func test() (int, int) {
+  return 1, 2
+}
+
+func main() {
+  // 错误写法
+  s := make([]int, 2)
+  s = test() // Error: multiple-value test() in single-value context
+	 
+  // 正确写法
+  x, _ := test()
+  fmt.Println(x)
+}
+
+// 输出
+1
+```
+
+多返回值可直接作为其它函数调用实参。
+
+```go
+// 多返回值可直接作为其它函数调用实参。
+func add(a, b int) (sum int) {
+	sum = a + b
+	return
+}
+
+func test2() (int, int) {
+	return 1, 2
+}
+
+func sum(n ...int) int {
+	var x int
+	for _, i := range n {
+		x += i
+	}
+
+	return x
+}
+
+func main() {
+  // 多返回值可直接作为其它函数调用实参。
+	fmt.Println(add(test2()))
+	fmt.Println(sum(test2()))
+}
+
+// 输出
+3
+3
+```
+
+命名返回参数可以看做与形参类似的局部变量，最后由return隐式返回。
+
+```go
+func add(x, y int) (z int) {
+  z = x +y
+  return
+}
+
+func main() {
+  fmt.Println(add(1, 2))
+}
+
+// 输出
+3
+```
+
+命名返回参数可被同名局部变量遮蔽，此时需要显示返回。
+
+```go
+func add(x, y int) (z int) {
+  { // 不能在一个级别，引发 "z redeclared in this block" 错误。
+        var z = x + y
+        // return   // Error: z is shadowed during return
+        return z // 必须显式返回。
+    }
+}
+```
+
+命名返回参数允许defer延迟调用通过闭包读取和修改。
+
+```go
+// 命名返回参数允许 defer 延迟调用通过闭包读取和修改
+func deferReturn(x, y int) (z int) {
+	defer func() {
+		fmt.Printf("defer z=%d\n", z)
+		z += 100
+	}()
+	z = x + y
+	return
+}
+
+func main() {
+  	fmt.Println(deferReturn(1, 2))
+}
+
+// 输出
+defer z=3
+103
+```
+
+显式return返回前，会先修改命名返回参数。
+
+```go
+func add(x, y int) (z int) {
+    defer func() {
+        println(z) // 输出: 203
+    }()
+
+    z = x + y
+    return z + 200 // 执行顺序: (z = z + 200) -> (call defer) -> (return)
+}
+
+func main() {
+    println(add(1, 2)) // 输出: 203
+}
+
+// 输出
+203
+203
+```
+
+#### 4、匿名函数
+
+​	匿名函数是指不需要定义函数名的一种函数实现方式。1958年LISP首先采用匿名函数。
+
+在Go里面，函数可以想普通变量一样被传递或使用，Go语言支持随时在代码里面定义匿名函数。
+
+匿名函数由一个不带函数名的函数声明和函数体组成。匿名函数的优越性在于可以直接使用函数内的变量，无需声明。
+
+```go
+func main() {
+  getSqrt := func(a float64) float64{
+    return math.Sqrt(a)
+  }
+  fmt.Println(getSqrt(4))
+}
+
+// 输出
+2
+```
+
+上面先定义了一个名为getSqrt 的变量，初始化该变量时和之前的变量初始化有些不同，使用了func，func是定义函数的，可是这个函数和上面说的函数最大不同就是没有函数名，也就是匿名函数。这里将一个函数当做一个变量一样的操作。
+
+Golang匿名函数可赋值给变量，做为结构字段，或者在 channel 里传送。
+
+```go
+func main() {
+  // function variable
+  fn := func() {
+    fmt.Println("hello world.")
+  }
+  fn()
+  
+  // function cllection
+  fns := [](func(x int) int) {
+    func(x int) int {return x + 1},
+    func(x int) int {return x + 2},
+  }
+  fmt.Println(fns[0](100))
+  
+  // function as field
+  d := struct{
+    fn func() string
+  }{
+    fn : func() string {return "hello world!"},
+  }
+  fmt.Println(d.fn())
+  
+  // channel of function
+  fc := make(chan func() string, 2)
+  fc <- func() string {return "hello world."}
+  fmt.Println((<-fc)())
+}
+
+// 输出
+hello world.
+101
+hello world!
+hello world.
+```
+
+#### 5、闭包、递归
+
+**闭包详解**
+
+闭包是由函数及其相关引用环境组合而成的实体（即：闭包 = 函数 + 引用环境）。
+
+官方解释：所谓闭包，指的是一个拥有许多变量和绑定了这些变量的环境的表达式（通常是一个函数），因而这些变量也应该是该表达式的一部分。
+
+**Go的闭包**
+
+```GO
+package main
+
+import "fmt"
+
+// 闭包（Closure）
+
+func a() func() int {
+	i := 0
+	b := func() int {
+		i++
+		fmt.Println(i)
+		return i
+	}
+	return b
+}
+
+func main() {
+	c := a()
+	c()
+	c()
+	c()
+
+	a() // 不会输出i
+}
+
+// 输出
+1
+2
+3
+```
+
+闭包复制的是原对象指针，这就很容易解释延迟引用现象。
+
+```go
+func test() func() {
+	x := 100
+	fmt.Printf("x(%p) = %d\n", &x, x)
+
+	return func() {
+		fmt.Printf("x(%p) = %d\n", &x, x)
+	}
+}
+
+func main() {
+	f := test()
+	f()
+}
+
+// 输出
+x(0xc0000140b8) = 100
+x(0xc0000140b8) = 100
+```
+
+在汇编层 ，test 实际返回的是 FuncVal 对象，其中包含了匿名函数地址、闭包对象指针。当调 匿名函数时，只需以某个寄存器传递该对象即可。
+
+```go
+FuncVal { func_address, closure_var_pointer ... }
+```
+
+外部引用函数参数局部变量
+
+```go
+func add(base int) func(int) int {
+  return func(i int) int {
+    base += 1
+    return base
+  }
+}
+
+func main() {
+  tmp1 := add(10)
+  fmt.Println(tmp1(1), tmp(2))
+  
+  // 此时tmp1和tmp2不是一个实体了
+  tmp2 := add(100)
+  fmt.Println(tmp2(1), tmp2(2))
+}
+
+// 输出
+11 12
+101 102
+```
+
+返回两个闭包
+
+```go
+// 返回两个函数类型的返回值
+func test01(base int) (func(int) int, func(int) int) {
+  // 定义两个函数并返回
+  add := func(i int) int {
+    base += i
+    return base
+  }
+  
+  sub := func(i int) int {
+    base -= i
+    return base
+  }
+  
+  return add, sub
+}
+
+func main() {
+  f1, f2 := test01(10)
+  fmt.Println(f1(1), f2(2))
+  // 此时base是9
+  fmt.Println(f1(3), f2(4))
+}
+
+// 输出
+11 9
+12 8
+```
+
+**Go递归函数**
+
+递归，就是在运行的过程中调用自己。一个函数调用自己，就叫做递归函数。
+
+构成递归需要具备的条件：
+
+```go
+1.子问题须与原始问题为同样的事，且更为简单
+2.不能无限地调用本身，须有个出口，化简为非递归状况处理
+```
+
+**数字阶乘**
+
+一个正整数的阶乘（factorial）是所有小于及等于该数的正整数的积，并且0的阶乘为1。自然数n的阶乘写作n!。1808年，基斯顿·卡曼引进这个表示法。
+
+```go
+func factoril(i int) int {
+  if i <= 1 {
+    return 1
+  }
+  return i * factoril(i-1)
+}
+
+func main() {
+  fmt.Println(factoril(3))
+}
+
+// 输出
+6
+```
+
+**斐波那契数列（Fibonacci）**
+
+这个数列从第三项开始，每一项都等于前两项的和。
+
+```go
+// 斐波那契数列(Fibonacci)
+func fionacci(i int) int {
+	if i == 0 {
+		return 0
+	}
+	if i == 1 {
+		return 1
+	}
+	return fionacci(i-1) + fionacci(i-2)
+}
+
+func main() {
+  for i := 0; i < 10; i++ {
+		fmt.Printf("%d\n", fionacci(i))
+	}
+}
+
+// 输出
+0
+1
+1
+2
+3
+5
+8
+13
+21
+34
+```
+
+#### 6、延迟调用（defer）
+
+**golang延迟调用**
+
+**defer特性**
+
+1. 关键字defer用户注册延迟调用
+2. 这些调用直到return前才被执行。因此，可以用来做资源清理
+3. 多个的反而语句，按先进后出的方式执行
+4. defer语句中的变量，在defer声明时就决定了
+
+**defer用途**
+
+1. 关闭文件句柄
+2. 锁资源释放
+3. 数据库连接释放
+
+
+
+#### 7、异常处理
+
+
+
+#### 8、单元测试
+
+
+
+#### 9、压力测试
 
 
 
