@@ -4024,9 +4024,166 @@ func main() {
 2. 锁资源释放
 3. 数据库连接释放
 
+**go语言defer**
 
+go语言的defer功能强大，对于资源管理非常方便，但是如果没用好，也会有陷阱。
+
+defer是先进后出。
+
+这个很自然，后面的语句会依赖前面的资源，因此如果前面的资源先释放了，后面的语句就没法执行了。
+
+```go
+func main() {
+	var whatever [5]struct{}
+	for i := range whatever {
+		defer fmt.Println(i)
+	}
+}
+
+// 输出
+4
+3
+2
+1
+0
+```
+
+**defer遇上闭包**
+
+```go
+func deferClosure() {
+	var whatever [5]struct{}
+	for i := range whatever {
+		defer func() { fmt.Println(i) }()
+	}
+}
+
+func main() {
+	deferClosure()
+}
+// 输出
+4
+4
+4
+4
+4
+```
+
+其实go说的很清楚,我们一起来看看go spec如何说的
+
+Each time a “defer” statement executes, the function value and parameters to the call are evaluated as usualand saved anew but the actual function is not invoked.
+
+也就是说函数正常执行,由于闭包用到的变量 i 在执行的时候已经变成4,所以输出全都是4.
+
+**defer f.Close**
+
+这个大家用的都很频繁,但是go语言编程举了一个可能一不小心会犯错的例子.
+
+```go
+type Test struct {
+	name string
+}
+
+func (t *Test) Close() {
+	fmt.Println(t.name, " closed")
+}
+
+func main() {
+	ts := []Test{
+		{"a"},
+		{"b"},
+		{"c"},
+	}
+	for _, v := range ts {
+		defer v.Close()
+	}
+}
+// 输出
+c  closed
+c  closed
+c  closed
+```
+
+这个输出并不会像我们预计的输出c b a,而是输出c c c
+
+可是按照前面的go spec中的说明,应该输出c b a才对啊.
+
+那我们换一种方式来调用一下.
+
+```go
+type Test struct {
+	name string
+}
+
+func (t *Test) Close() {
+	fmt.Println(t.name, " closed")
+}
+
+func Close(t Test) {
+	t.Close()
+}
+
+func main() {
+	ts := []Test{
+		{"a"},
+		{"b"},
+		{"c"},
+	}
+	for _, v := range ts {
+		defer Close(v)
+	}
+}
+// 输出
+c  closed
+b  closed
+a  closed
+```
+
+​	defer后面的语句在执行的时候，函数调用的参数会被保存起来，但是不执行。也就是复制了一份。但是并没有说struct这里的this指针如何处理，通过这个例子可以看出go语言并没有把这个明确写出来的this指针当作参数来看待。
+
+​	多个defer注册，按FILO次序执行（先进后出）。哪怕函数或某个延迟调用发生错误，这些调用依旧会被执行。
+
+```go
+func main() {
+	test(0)
+}
+
+func test(x int) {
+	defer fmt.Println("a")
+	defer fmt.Println("b")
+
+	defer func() {
+		fmt.Println(100 / x) // div0 异常未被捕获，逐步往外传递，最终终止进程。
+	}()
+	defer fmt.Println("c")
+}
+
+// 输出
+c
+b
+a
+panic: runtime error: integer divide by zero
+```
+
+`*`延迟调用参数在注册时求值或复制，可用指针或闭包 “延迟” 读取。
+
+后面的太复杂暂时跳过。
 
 #### 7、异常处理
+
+Golang 没有结构化异常，使用 panic 抛出错误，recover 捕获错误。
+
+异常的使用场景简单描述：Go中可以抛出一个panic的异常，然后在defer中通过recover捕获这个异常，然后正常处理。
+
+**panic：**
+
+```go
+1.内置函数
+2.假如函数F中书写了panic语句，会终止其后要执行的代码，在panic所在函数F内如果存在要执行的defer函数列表，按照defer的逆序执行
+3.返回函数F中调用者G，在G中，调用
+```
+
+
 
 
 
