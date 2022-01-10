@@ -4180,10 +4180,99 @@ Golang 没有结构化异常，使用 panic 抛出错误，recover 捕获错误�
 ```go
 1.内置函数
 2.假如函数F中书写了panic语句，会终止其后要执行的代码，在panic所在函数F内如果存在要执行的defer函数列表，按照defer的逆序执行
-3.返回函数F中调用者G，在G中，调用
+3.返回函数F的调用者G，在G中，调用函数F语句之后的代码不会执行，假如函数G中存在要执行的defer函数列表，按照defer的逆序执行
+4.直到goroutine整个退出，并报告错误
 ```
 
+**recover：**
 
+```go
+1.内置函数
+2.用来控制一个goroutine的panicKing行为，捕获panic，从而影响应用的行为
+3.一般的调用建议
+	a).在defer函数中，通过recover来终止一个goroutine的panicking的过程，从而恢复正常代码的执行
+	b).可以获取通过panic传递的error
+```
+
+**注意：**
+
+```go
+1.利用recover处理panic指令，defer必须放在panic之前定义，另外recover只有在defer调用的函数中才有效。否则当panic时，recover无法捕获到panic，无法防止panic扩散
+2.recover处理异常后，逻辑并不会恢复到panic那个点去，函数跑到defer之后的那个点
+3.多个defer会形成defer栈，后定义defer的defer语句会先被调用
+```
+
+```go
+func main() {
+	test()
+}
+
+func test() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Printf("%T\n", err)
+			fmt.Println(err.(string)) // 将 interface{} 转型为具体类型
+		}
+	}()
+	panic("panic error!")
+}
+// 输出
+string
+panic error!
+```
+
+由于panic、recover参数类型为interface{}，因此可抛出任何类型对象。
+
+```go
+func panic(v interface{})
+
+func recover() interface{}
+```
+
+向已关闭的通道发送数据会引发panic
+
+```go
+func main() {
+	panicChannel(1)
+}
+
+// 向已关闭的通道发送数据引发panic
+func panicChannel(n int) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+	ch := make(chan int, 10)
+	close(ch)
+	ch <- n
+}
+// 输出
+send on closed channel
+```
+
+延迟调用中引发的错误，可被后续延迟调用捕获，但仅最后一个可被捕获。
+
+```go
+func main() {
+	deferPanic()
+}
+
+// 延迟调用中引发的错误，可被后续延迟调用捕获，但仅最后一个错误可被捕获。
+func deferPanic() {
+	defer func() {
+		fmt.Println(recover())
+	}()
+
+	defer func() {
+		panic("defer panic error!")
+	}()
+
+	panic("deferPanic test!")
+}
+// 输出
+defer panic test！
+```
 
 
 
