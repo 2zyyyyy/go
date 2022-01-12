@@ -4274,11 +4274,154 @@ func deferPanic() {
 defer panic test！
 ```
 
+捕获函数recover只有在延迟调用内直接调用才会终止错误，否则总是返回nil。任何未捕获的错误都会沿调用堆栈向外传递。
 
+```go
+func main() {
+	deferRecover()
+}
+
+func deferRecover() {
+	defer func() {
+		fmt.Println(recover()) // 有效
+	}()
+	
+	defer recover() // 无效
+
+	defer fmt.Println(recover()) // 无效
+
+	defer func() {
+		func() {
+			fmt.Println("defer inner!")
+			recover() // 无效
+		}()
+	}()
+	panic("test panic!!")
+}
+// 输出
+defer inner!
+<nil>
+test panic!!
+```
+
+使用延迟匿名函数或下面这样都是有效的。
+
+```go
+func main() {
+	testExcept()
+}
+
+// 使用延迟匿名函数或下面这样都是有效的。
+func except() {
+	fmt.Println(recover())
+}
+
+func testExcept() {
+	defer except()
+	panic("test panic!")
+}
+// 输出
+test panic!
+```
+
+如果需要保护代码 段，可将代码块重构成匿名函数，如此可确保后续代码被执行。
+
+```go
+func main() {
+	protectFunc(2,1)
+}
+
+// 如果需要保护代码 段，可将代码块重构成匿名函数，如此可确保后续代码被执行
+func protectFunc(x,y int) {
+	var z int
+	func() {
+		defer func() {
+			if recover() != nil {
+				z = 0
+			}
+		}()
+		panic("test panic!")
+		z = x / y
+		return
+	}()
+	fmt.Printf("x / y = %d\n", z)
+}
+// 输出
+x / y = 0
+```
+
+除用panic引发中断性错误外，还可返回error类型错误对象来表示函数调用状态。
+
+```go
+type error interface{
+  Error() string
+}
+```
+
+ 标准库errors.New和fmt.Errorf函数用于创建实现error接口的错误对象。通过判断错误对象实例来确定具体错误类型。
+
+```go
+var ErrorDieByZero = errors.New("division by zero!")
+
+func main() {
+	defer func() {
+		fmt.Println(recover())
+	}()
+	switch z, err := division(10, 0); err{
+	case nil:
+		fmt.Println(z)
+	case ErrorDieByZero:
+		panic(err)
+	}
+}
+
+func division(x, y int) (int, error) {
+	if y == 0{
+		return 0, ErrorDieByZero
+	}
+	return x/y, nil
+}
+// 输出
+division by zero!
+```
+
+Go实现类似try catch的异常处理
+
+```go
+func main() {
+	Try(func(){
+		panic("test panic!")
+	}, func(err interface{}) {
+		fmt.Println(err)
+	})
+}
+
+// GO tyr catch
+func Try(fun func(), handler func(interface{})) {
+	defer func() {
+		if err := recover(); err != nil {
+			handler(err)
+		}
+	}()
+	fun()
+}
+// 输出
+test panic!
+```
+
+如何区别使用panic和error两种方式？
+
+惯例是：导致关键流程出现不可修复性错误的使用panic，其他使用error。
 
 #### 8、单元测试
 
+**go test工具**
 
+Go语言中的测试依赖go test命令。编写测试代码和编写普通的Go代码过程是类似的，并不需要学习新的语法、规则或工具。
+
+go test命令是一个按照一定约定和组织的测试代码的驱动程序。在包目录内，所有以_test.go为后缀名的源代码文件都是go test测试的一部分，不会被go build编译到最终的可执行文件中。
+
+在`*_test.go`文件中有三种类型的函数，单元测试函数、基准测试函数和示例函数。
 
 #### 9、压力测试
 
