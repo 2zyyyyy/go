@@ -4595,14 +4595,221 @@ func TestSplit(t *testing.T) {
 		t.Errorf("excepted:%v, got:%v\n", want, got)
 	}
 }
+
+func TestMoreSplit(t *testing.T) {
+    got := Split("abcd", "bc")
+    want := []string{"a", "d"}
+    if !reflect.DeepEqual(want, got) {
+        t.Errorf("excepted:%v, got:%v", want, got)
+    }
+}
 ```
 
 在split包路径下，执行go test命令：
 
 ```go
- ~/go/src/go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split   master ±  go test
+ ~/go/src/go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split   master  go test
 s=a:b:c, i=1, result=[a]
 s=b:c, i=1, result=[a b]
+s=abcd, i=1, result=[a]
+--- FAIL: TestMoreSplit (0.00s)
+    split_test.go:25: excepted:[a d], got:[a cd]
+FAIL
+exit status 1
+FAIL    go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split     0.006s
+```
+
+可以看到，两条测试用例中有一条测试没有通过，这种情况我们可以通过在go test添加-v参数，查看测试函数名称和运行时间：
+
+```go
+ ~/go/src/go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split   master ±  go test -v
+=== RUN   TestSplit
+s=a:b:c, i=1, result=[a]
+s=b:c, i=1, result=[a b]
+--- PASS: TestSplit (0.00s)
+=== RUN   TestMoreSplit
+s=abcd, i=1, result=[a]
+    TestMoreSplit: split_test.go:25: excepted:[a d], got:[a cd]
+--- FAIL: TestMoreSplit (0.00s)
+FAIL
+exit status 1
+FAIL    go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split     0.006s
+```
+
+这次我们可以清楚的看到是TestMoreSplit这个测试没有成功。还可以在go test后添加-run参数，它对应一个正则表达式，只有函数名称匹配上的测试函数才会被执行。
+
+```go
+ ~/go/src/go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split   master ±  go test -run="More"
+s=abcd, i=1, result=[a]
+--- FAIL: TestMoreSplit (0.00s)
+    split_test.go:25: excepted:[a d], got:[a cd]
+FAIL
+exit status 1
+FAIL    go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split     0.006s
+```
+
+现在我们来解决程序中的问题。很显然我们最初的split函数没有考虑到sep为多个字符的情况，我们来修复一下这个bug：
+
+```go
+func Split(s, sep string) (result []string) {
+	i := strings.Index(s, sep)
+	for i > -1 {
+		result = append(result, s[:i])
+		fmt.Printf("s=%s, i=%d, result=%s\n", s, i, result)
+    // s = s[i+1:] i+1会导致sep长度大于1 产生bug 需要将1改成sep的长度
+		s = s[i+(len(sep)):]
+		i = strings.Index(s, sep)
+	}
+	result = append(result, s)
+	return
+}
+```
+
+这一次我们再来测试一下，我们的程序。注意，当我们修改了我们的代码之后不要仅仅执行那些失败的测试函数，我们应该完整的运行所有的测试，保证不会因为修改代码而引入了新的问题。
+
+```go
+  ~/go/src/go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split   master ±  go test -v
+=== RUN   TestSplit
+s=a:b:c, i=1, result=[a]
+s=b:c, i=1, result=[a b]
+--- PASS: TestSplit (0.00s)
+=== RUN   TestMoreSplit
+s=abcd, i=1, result=[a]
+--- PASS: TestMoreSplit (0.00s)
+PASS
+ok      go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split     0.006s
+```
+
+**测试组**
+
+****
+
+我们现在还想要测试一下split函数对中文字符串的支持。这个时候我们可以编写一个TestChineseSplit测试函数，但是我们也可以使用如下更友好的一种方式来添加更多的测试用例。
+
+```go
+package split
+
+import (
+	"fmt"
+	"testing"
+	"reflect"
+)
+
+func TestSplit(t *testing.T) {
+	// 定义一个测试类型
+	type Test struct {
+		input string
+		sep string
+		want []string
+	}
+
+	// 定义一个存储测试用例的切片
+	tests := []Test{
+		{input: "a:b:c", sep: ":", want: []string{"a", "b", "c"}},
+        {input: "a:b:c", sep: ",", want: []string{"a:b:c"}},
+        {input: "abcd", sep: "bc", want: []string{"a", "d"}},
+        {input: "枯藤老树昏鸦", sep: "老", want: []string{"枯藤", "树昏鸦"}},
+	}
+
+	// 遍历切片 逐一执行测试用例
+	for _, tc := range tests {
+		got := Split(tc.input, tc.sep)
+		// 对比期望及实际结果（slice无法直接比较，借助反射包中的方法对比）
+		fmt.Printf("input=%s, sep=%s, tc.want=%#v, got=%#v\n", tc.input, tc.sep, tc.want, got)
+		if !reflect.DeepEqual(tc.want, got) {
+			// 测试失败输出错误提示
+			t.Errorf("excepted:%v, got:%v\n", tc.want, got)
+		}
+	}
+
+	
+}
+
+// 输出
+=== RUN   TestSplit
+input=a:b:c, sep=:, tc.want=[]string{"a", "b", "c"}, got=[]string{"a", "b", "c"}
+input=a:b:c, sep=,, tc.want=[]string{"a:b:c"}, got=[]string{"a:b:c"}
+input=abcd, sep=bc, tc.want=[]string{"a", "d"}, got=[]string{"a", "d"}
+input=枯藤老树昏鸦, sep=老, tc.want=[]string{"枯藤", "树昏鸦"}, got=[]string{"枯藤", "树昏鸦"}
+--- PASS: TestSplit (0.00s)
+PASS
+ok      go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split     0.006s
+```
+
+**子测试**
+
+****
+
+如果测试用例比较多的时候，我们是没办法一眼看出来具体是那个测试用例失败了。我们可能会想到下面的解决办法,Go1.7+中新增了子测试，我们可以按照如下方式使用t.Run执行子测试：
+
+```go
+package split
+
+import (
+	"fmt"
+	"testing"
+	"reflect"
+)
+
+func TestSplit(t *testing.T) {
+	// 定义一个测试类型
+	type Test struct {
+		input string
+		sep string
+		want []string
+	}
+
+	// 定义一个存储测试用例的切片
+	tests := map[string]Test{
+		"testcase P0": {input: "a:b:c", sep: ":", want: []string{"a", "b", "c"}},
+        "testcase P2": {input: "a:b:c", sep: ",", want: []string{"a:b:c"}},
+        "testcase P3": {input: "abcd", sep: "bc", want: []string{"a", "d"}},
+        "testcase P4": {input: "枯藤老树昏鸦", sep: "老", want: []string{"枯藤", "树昏鸦"}},
+	}
+
+	// 遍历切片 逐一执行测试用例
+	for name, tc := range tests {
+		// 使用t.Run()执行子测试
+		t.Run(name, func(t *testing.T) {
+			got := Split(tc.input, tc.sep)
+			// 对比期望及实际结果（slice无法直接比较，借助反射包中的方法对比）
+			fmt.Printf("input=%s, sep=%s, tc.want=%#v, got=%#v\n", tc.input, tc.sep, tc.want, got)
+			if !reflect.DeepEqual(tc.want, got) {
+			// 测试失败输出错误提示
+			t.Errorf("excepted:%v, got:%v\n", tc.want, got)
+		}
+		})
+	}
+}
+
+// 输出
+=== RUN   TestSplit
+=== RUN   TestSplit/testcase_P0
+input=a:b:c, sep=:, tc.want=[]string{"a", "b", "c"}, got=[]string{"a", "b", "c"}
+=== RUN   TestSplit/testcase_P2
+input=a:b:c, sep=,, tc.want=[]string{"a:b:c"}, got=[]string{"a:b:c"}
+=== RUN   TestSplit/testcase_P3
+input=abcd, sep=bc, tc.want=[]string{"a", "d"}, got=[]string{"a", "d"}
+=== RUN   TestSplit/testcase_P4
+input=枯藤老树昏鸦, sep=老, tc.want=[]string{"枯藤", "树昏鸦"}, got=[]string{"枯藤", "树昏鸦"}
+--- PASS: TestSplit (0.00s)
+    --- PASS: TestSplit/testcase_P0 (0.00s)
+    --- PASS: TestSplit/testcase_P2 (0.00s)
+    --- PASS: TestSplit/testcase_P3 (0.00s)
+    --- PASS: TestSplit/testcase_P4 (0.00s)
+PASS
+ok      go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split     0.006s
+```
+
+我们还可以通过go test -v -run=Split/testcase P0来执行指定的测试用例：
+
+```go
+go test -v -run="Split/testcase P0"
+=== RUN   TestSplit
+=== RUN   TestSplit/testcase_P0
+input=a:b:c, sep=:, tc.want=[]string{"a", "b", "c"}, got=[]string{"a", "b", "c"}
+--- PASS: TestSplit (0.00s)
+    --- PASS: TestSplit/testcase_P0 (0.00s)
 PASS
 ok      go/github.io/2zyyyyy/chineseDocumentation/unitTesting/split     0.006s
 ```
