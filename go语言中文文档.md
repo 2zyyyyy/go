@@ -5222,33 +5222,154 @@ func main() {
 下面定义一个结构体类型和该类型的一个方法
 
 ```go
+package main
+
+import "fmt"
+
+// Golang 方法
+
 // struct
 type User struct {
-  Name string
-  Address string
+	Name, Address string
 }
 
-// method
-func (u User)Express(number string) {
-  fmt.Printf("number=%s, name=%s, address=%s\n", number, u.Name, u.Address)
+// struct metnhod
+func (u User) Express(num string) {
+	fmt.Printf("u.num=%s, u.name=%s, u.address=%s\n", num, u.Name, u.Address)
 }
 
 func main() {
+	// 值类型调用方法
+	u1 := User{
+		"张三",
+		"法外狂徒张三的家在哪里？",
+	}
+	fmt.Printf("u1 type=%T\n", u1)
+	u1.Express("88798871")
+
+	// 指针类型调用方法
+	u2 := &User{
+		"李四",
+		"法外狂徒李四的家在哪里？",
+	}
+	fmt.Printf("u2 type=%T\n", u2)
+	u2.Express("15099893012")
+}
+
+// 输出
+u1 type=main.User
+u.num=88798871, u.name=张三, u.address=法外狂徒张三的家在哪里？
+u2 type=*main.User
+u.num=15099893012, u.name=李四, u.address=法外狂徒李四的家在哪里？
+```
+
+首先我们定义了一个叫做User的结构体类型，然后定义了一个该类型的方法叫做Express，该方法的接收者是一个User类型的值。要调用Express方法我们需要一个User类型的值或者指针。
+
+在这个例子中当我们使用指针时，Go调用和解引用指针是的调用可以被执行。注意，当接收者不是一个指针时，该方法操作对应接收者的值的副本（意思就是即使你使用了指针调用函数，但是函数的接收者是值类型，所以函数内部操作还是对副本的操作，而不是指针操作）。
+
+修改Express方法，让它的接收者使用指针类型：
+
+```go
+// struct metnhod
+func (u *User) Express(num string) {
+	fmt.Printf("u.num=%s, u.name=%s, u.address=%s\n", num, u.Name, u.Address)
+}
+```
+
+注意：当接收者是指针时，即使用值类型调用，那么函数内部也是对指针的操作。
+
+方法不过是一种特殊的函数，只需将其还原，就知道receiver T和*T的差别。
+
+```go
+type Data struct {
+	x int
+}
+
+func main() {
+	d := Data{}
+	p := &d
+	fmt.Printf("&d=%p\n", p) // 0xc0000b4008
+
+	d.vauleTest()   // 0xc0000b4018
+	d.pointerTest() // 0xc0000b4008
+
+	p.vauleTest()   // 0xc0000b4030
+	p.pointerTest() // 0xc0000b4008
+}
+```
+
+**普通函数与方法的区别**
+
+1. 对于普通函数，接收者为值类型时，不能将指针类型数据直接传递，反之亦然。
+2. 对于方法（如struct的方法），接收者为值类型时，可以直接用指针类型的变量调用方法，反过来也同样可以。
+
+```go
+// 普通函数与方法的区别(在接收者分别为值类型和指针类型的时候)
+
+// 1.普通函数
+// 接收值类型参数的函数
+func valueTest(a int) int {
+  return a + 10
+}
+
+// 接收指针类型参数的函数
+func pointTest(a *int) int {
+  return *a + 10
+}
+
+func structTestValue() {
+  a := 2
+  fmt.Println("valueTest:", valueTest(a))
+  // 函数的参数作为值类型，则不能直接将指针作为参数传递
+  fmt.Println("valueTest:", valueTest(&a)) // 错误写法
+  
+  b := 5
+  fmt.Println("pointerTest:", pointTest(&b))
+  // 同样，当函数的参数为指针类型时，也不能直接将值类型作为参数传递
+  fmt.Println("pointTest:", pointTest(b)) // 错误写法
+}
+
+// 2.方法
+type User struct {
+  id int
+  name string
+}
+
+// 接收者为值类型
+func (u User) valueShowName() {
+  fmt.Println(u.name)
+}
+
+// 接收者为指针类型
+func (u *User) pointShowName() {
+  fmt.Println(u.name)
+}
+
+func structTestFunc() {
   // 值类型调用方法
-  u1 := User{
-    "张三",
-    "法外狂徒张三的家"
-  }
-  u1.Express("18989833728")
+  userValue := User{1, "张三"}
+  userValue.valueShowName()
+  userValue.pointShowName()
   
   // 指针类型调用方法
-  u2 := User{
-    "李四",
-    "法外狂徒李四的家"
-  }
-  u3 := &u2
-  u3.Express()
+  userPoint := &User{2, "李四"}
+  userPoint.valueShowName()
+  userPoint.pointShowName()
+  //与普通函数不同，接收者为指针类型和值类型的方法，指针类型和值类型的变量均可相互调用
 }
+
+func main() {
+  structTestValue()
+	structTestFunc()
+}
+
+// 输出
+valueTest: 12
+pointerTest: 15
+张三
+张三
+李四
+李四
 ```
 
 
