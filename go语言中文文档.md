@@ -5372,33 +5372,253 @@ pointerTest: 15
 李四
 ```
 
-
-
-
-
-
-
-
-
 #### 2、匿名字段
 
+Golang匿名字段：可以像字段成员那样访问匿名字段方法，编译器负责查找。
 
+```go
+package main
 
+import (
+	"fmt"
+)
 
+// 匿名字段
 
+type User struct {
+	id   int
+	name string
+}
 
+type Manager struct {
+	User
+}
 
+func (u *User) toString() string {
+	return fmt.Sprintf("User: %p, %v", u, u)
+}
 
+func main() {
+	manager := Manager{User{
+		100,
+		"法外狂徒张三",
+	}}
+	// 反射获取manager类型
+	// fmt.Println("manager type=", reflect.TypeOf(manager))
+	fmt.Printf("manager type=%T, manager=%p\n", manager, &manager)
+	fmt.Println(manager.toString())
+}
+
+// 输出
+manager type=main.Manager, manager=0xc00000c060
+User: 0xc00000c060, &{100 法外狂徒张三}
+```
+
+通过匿名字段，可获得和继承类似的复用能力。依据编译器查找顺序，只需在外层定义同名方法，就可以实现”override“。
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// 匿名字段
+
+type User struct {
+	id   int
+	name string
+}
+
+type Manager struct {
+	User
+	title string
+}
+
+func (u *User) toString() string {
+	return fmt.Sprintf("User: %p, %v", u, u)
+}
+
+// 通过匿名字段，可获得和继承类似的复用能力。依据编译器查找顺序，只需在外层定义同名方法，就可以实现”override“。
+func (m *Manager) toString() string {
+	return fmt.Sprintf("Manager: %p, %v", m, m)
+}
+
+func main() {
+	manager := Manager{User{
+		100,
+		"法外狂徒张三",
+	}, "manager title"}
+
+	fmt.Printf("manager type=%T, manager=%p\n", manager, &manager)
+	fmt.Println(manager.toString())
+	fmt.Println(manager.User.toString())
+}
+
+//  输出
+manager type=main.Manager, manager=0xc000064180
+Manager: 0xc000064180, &{{100 法外狂徒张三} manager title}
+User: 0xc000064180, &{100 法外狂徒张三}
+```
 
 #### 3、方法集
 
+Golang方法集：每个类型都有与之关联的方法集，这会影响到接口实现规则。
 
+```go
+1.类型 T 方法集包含全部receiver T 方法
+2.类型 *T 方法集包含全部receiver T + *T 方法
+3.如类型 S 包含匿名字段 T，则S和*S方法集包含 T 和 *T	
+4.如类型 S 包含匿名字段 *T，则 S 和 *S 方法集包含 T + *T 方法
+5.不管嵌入 T 或 *T，*S 方法集总是包含 T + *T 方法
+```
 
+用实例value和pointer调用方法（含匿名字段）不受方法集约束，编译器总是查找全部方法，并自动转换receiver实参。
 
+Go语言中内部类型方法集提升的规则：
 
+类型 T 方法集包含了全部receiver T 方法。
 
+```GO
+package main
 
+import "fmt"
 
+// 方法集
+
+type T struct {
+	int
+}
+
+func (t T) tFunc() {
+	fmt.Println("类型T方法集包含所有receiver T的方法.")
+}
+
+func main() {
+	t1 := T{
+		100,
+	}
+	fmt.Printf("t1=%v\n", t1)
+	t1.tFunc()
+}
+
+// 输出
+t1={100}
+类型T方法集包含所有receiver T的方法.
+```
+
+类型 `*T` 方法集包含全部 `receiver T + *T` 方法。
+
+```go
+package main
+
+import "fmt"
+
+// 方法集
+
+type T struct {
+	int
+}
+
+func (t T) tFunc() {
+	fmt.Println("类型T方法集包含所有receiver T的方法.")
+}
+
+func (t *T) pFunc() {
+	fmt.Println("类型*T方法集包含所有receiver *T的方法.")
+}
+
+func main() {
+	t1 := T{
+		100,
+	}
+	t2 := &t1
+	fmt.Printf("t2=%v\n", t2)
+	t2.tFunc()
+	t2.pFunc()
+}
+
+// 输出
+t2=&{100}
+类型T方法集包含所有receiver T的方法.
+类型*T方法集包含所有receiver *T的方法.
+```
+
+给定一个结构体类型S和命名为T的类型，方法提升像下面规定的这样被包含在结构体方法集中：
+
+如类型S包含匿名字段T，则S和*S方法集包含T的方法。
+
+这条规则说的是当我们嵌入一个类型，嵌入类型的接收者为值类型的方法将被提升，可以被外部类型的值和指针调用。
+
+```GO
+type T struct {
+  int
+}
+
+type S struct {
+  T
+}
+
+func (t T) tFunc() {
+  fmt.Println("如类型 S 包含匿名字段 T，则 S 和 *S 方法集包含 T 方法。")
+}
+
+func main() {
+  s1 := S{T{100}}
+  s2 := &s1
+  fmt.Printf("s1=%v\n", s1)
+  s1.tFunc()
+  fmt.Printf("s2=%v\n", s2)
+  s2.tFunc()
+}
+
+// 输出
+s1={{100}}
+如类型 S 包含匿名字段 T，则 S 和 *S 方法集包含 T 方法。
+s2=&{{100}}
+如类型 S 包含匿名字段 T，则 S 和 *S 方法集包含 T 方法。
+```
+
+如类型 S 包含匿名字段 `*T`，则 S 和 `*S` 方法集包含 `T + *T` 方法。
+
+这条规则说的是当我们嵌入一个类型的指针，嵌入类型的接收者为值类型或指针类型的方法将被提升，可以被外部类型的值或者指针调用。
+
+```go
+type T struct {
+  int
+}
+
+type S struct {
+  T
+}
+
+func (t T) tFunc() {
+  fmt.Println("如类型 S 包含匿名字段 T，则 S 和 *S 方法集包含 T 方法")
+}
+
+func (t *T) pFunc() {
+  fmt.Println("如类型 S 包含匿名字段 *T，则 S 和 *S 方法集包含 *T 方法")
+}
+
+func main() {
+  s1 := S{T{100}}
+  s2 := &s1
+  fmt.Printf("s1 is : %v\n", s1)
+  s1.tFunc()
+  s1.pFunc()
+  fmt.Printf("s2 is : %v\n", s2)
+  s2.tFunc()
+  s2.pFunc()
+}
+
+// 输出
+s1 is : {{100}}
+如类型 S 包含匿名字段 T，则 S 和 *S 方法集包含 T 方法
+如类型 S 包含匿名字段 *T，则 S 和 *S 方法集包含 *T 方法
+s2 is : &{{100}}
+如类型 S 包含匿名字段 T，则 S 和 *S 方法集包含 T 方法
+如类型 S 包含匿名字段 *T，则 S 和 *S 方法集包含 *T 方法
+```
 
 ### 4、表达式
 
