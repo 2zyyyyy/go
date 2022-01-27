@@ -5622,21 +5622,234 @@ s2 is : &{{100}}
 
 ### 4、表达式
 
+Golang表达式：根据调用者不同，方法分为两种表现形式：
 
+```go
+instance.method(args...) ---> <type>.func(instance, args...)
+```
 
+前者称为method value，后者method expression。
 
+两者都可像普通函数那样赋值和传参，区别在于method value绑定实例，二method expression则须显示传参。
 
+```go
+package main
 
+import (
+	"fmt"
+)
 
+// 表达式
 
+type User struct {
+	id   int
+	name string
+}
+
+func (u *User) Test() {
+	fmt.Printf("u.p=%p, u.v=%v\n", u, u)
+}
+
+func main() {
+	user := User{
+		100,
+		"user.name",
+	}
+	user.Test()
+
+	methodValue := user.Test
+	methodValue() // 隐式传递 receiver
+
+	methodExpression := (*User).Test
+	methodExpression(&user) // 显式传递 receiver
+}
+
+// 输出
+u.p=0xc00000c060, u.v=&{100 user.name}
+u.p=0xc00000c060, u.v=&{100 user.name}
+u.p=0xc00000c060, u.v=&{100 user.name}
+```
+
+需要注意，method value会复制receiver。
+
+```GO
+type User struct {
+  id int
+  name string
+}
+
+func (u User) Test() {
+  fmt.Println(u)
+}
+
+func main() {
+  user := User{
+    1,
+    "user.name",
+  }
+  methodValue := user.Test // 立即复制receiver，因为不是指针类型，不受后续修改影响
+  
+  user.id, user.name = 2, "tony"
+  user.Test()
+  
+  methodValue()
+}
+
+// 输出
+{2 tony}
+{1 user.name}
+```
 
 #### 5、自定义error
 
+**抛异常和处理异常**
 
+****
 
+**系统抛异常**
 
+```GO
+package main
 
+import "fmt"
 
+// 自定义异常
+
+// system error
+func systemError() {
+	a := [5]int{1, 2, 3, 4, 5}
+	a[1] = 123
+	fmt.Println(a)
+	index := 10
+	a[index] = 10
+	fmt.Println(a)
+}
+
+// 自己抛
+func getCircleArea(radius float32) (area float32) {
+	if radius <= 0 {
+		panic("半径必须大于0")
+	}
+	return 3.14 * radius * radius
+}
+
+func test01() {
+	// 延时执行匿名函数
+	// 延时到何时 1.程序正常结束 2.发生异常时
+	defer func() {
+		// recover() 复活 恢复
+		// 会返回程序为什么挂了
+		if err := recover(); err != nil {
+			fmt.Printf("defer fun() err=%s\n", err)
+		}
+	}()
+	getCircleArea(-1)
+	fmt.Println("getCircleArea函数报错，此处不执行。")
+}
+
+func test02() {
+	test01()
+	fmt.Println("test02()")
+}
+
+func main() {
+	test02()
+}
+
+// 输出
+defer fun() err=半径必须大于0
+test02()
+```
+
+**返回异常**
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+// 返回异常
+func getCircleArea02(radius float32) (area float32, err error) {
+	if radius <= 0 {
+		// 构建一个异常对象
+		err = errors.New("半径必须大于0")
+		return
+	}
+	area = 3.14 * radius * radius
+	return
+}
+
+func main() {
+	area, err := getCircleArea02(0)
+	if err != nil {
+		fmt.Printf("err=%s\n", err)
+	} else {
+		fmt.Printf("area=%f\n", area)
+	}
+}
+
+// 输出
+err=半径必须大于0
+```
+
+**自定义error**
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"time"
+)
+
+// 自定义异常
+type CustomError struct {
+	path       string
+	op         string
+	createTime string
+	message    string
+}
+
+func (c *CustomError) Error() string {
+	return fmt.Sprintf("path=%s \n op=%s \n createTime=%s message=%s",
+		c.path, c.op, c.createTime, c.message)
+}
+
+func Open(fileName string) error {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return &CustomError{
+			path:       fileName,
+			op:         "read",
+			createTime: fmt.Sprintf("%v\n", time.Now()),
+			message:    err.Error(),
+		}
+	}
+	defer file.Close()
+	return nil
+}
+
+func main() {
+	//自定义error
+	err = Open("/Users/gilbert/go/src/go/README1.md")
+	switch v := err.(type) {
+	case *CustomError:
+		fmt.Println("get path error,", v)
+	default:
+	}
+}
+
+// 输出
+get path error, path=/Users/gilbert/go/src/go/README1.md 
+ op=read 
+ createTime=2022-01-27 18:26:49.228543 +0800 CST m=+0.000137326
+ message=open /Users/gilbert/go/src/go/README1.md: no such file or directory
+```
 
 ### 面向对象
 
