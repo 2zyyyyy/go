@@ -24,14 +24,14 @@ func main() {
 	// 	panic(err)
 	// }
 
-	Try(func(){
+	Try(func() {
 		panic("test panic!")
 	}, func(err interface{}) {
 		fmt.Println(err)
 	})
 }
 
-// GO tyr catch
+// GO try catch
 func Try(fun func(), handler func(interface{})) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -45,14 +45,14 @@ func Try(fun func(), handler func(interface{})) {
 var ErrorDieByZero = errors.New("division by zero!")
 
 func division(x, y int) (int, error) {
-	if y == 0{
+	if y == 0 {
 		return 0, ErrorDieByZero
 	}
-	return x/y, nil
+	return x / y, nil
 }
 
 // 如果需要保护代码 段，可将代码块重构成匿名函数，如此可确保后续代码被执行
-func protectFunc(x,y int) {
+func protectFunc(x, y int) {
 	var z int
 	func() {
 		defer func() {
@@ -82,7 +82,7 @@ func deferRecover() {
 	defer func() {
 		fmt.Println(recover()) // 有效
 	}()
-	
+
 	defer recover() // 无效
 
 	defer fmt.Println(recover()) // 无效

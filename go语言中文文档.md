@@ -5853,6 +5853,131 @@ get path error, path=/Users/gilbert/go/src/go/README1.md
 
 ### 面向对象
 
+#### 1、匿名字段
+
+Golang支持只提供类型而不写字段名的方式，也就是匿名字段，也称为嵌入字段。
+
+```GO
+package main
+
+import "fmt"
+
+type Person struct {
+	name string
+	sex  string
+	age  int
+}
+
+type Student struct {
+	Person
+	id      int
+	address string
+}
+
+func main() {
+	// 初始化
+	student1 := Student{Person{"柱子哥1号", "man", 28}, 1001, "海智中心1号楼"}
+	fmt.Println(student1)
+
+	student2 := Student{
+		Person: Person{"柱子哥2号", "man", 29}}
+	fmt.Println(student2)
+
+	student3 := Student{Person: Person{name: "柱子哥3号"}}
+	fmt.Println(student3)
+}
+
+// 输出
+{{柱子哥1号 man 28} 1001 海智中心1号楼}
+{{柱子哥2号 man 29} 0 }
+{{柱子哥3号  0} 0 }
+```
+
+**同名字段的情况**
+
+```go
+type Person struct {
+	name string
+	sex  string
+	age  int
+}
+
+type Student struct {
+	Person
+	id      int
+	address string
+  // 同名字段
+  name string
+}
+
+func main() {
+  var student Student
+  // 给自己的字段赋值
+  student.name = "Student.name"
+  
+  // 给父类同名字段fuzhi(Person.name)
+  student.Person.name = "Person.name"
+  fmt.Println(student)
+}
+```
+
+**所有的内置类型和自定义类型都是可以作为匿名字段去使用**
+
+```GO
+type Person struct {
+	name string
+	sex  string
+	age  int
+}
+
+// 自定义类型
+type myString string
+
+type Student struct {
+	Person
+	id      int
+	myString
+}
+
+func main() {
+  student := Student{Person{"person.name", "person.sex", 10}, 100, "student.myString"}
+  fmt.Println(student)
+}
+```
+
+**指针类型匿名字段**
+
+```GO
+
+type Person struct {
+	name string
+	sex  string
+	age  int
+}
+
+type Student struct {
+	*Person
+	id      int
+	address string
+}
+
+func main() {
+  student := Student{&Person{"大柱子", "man", 28}, 100, "钉钉空间3号楼403"}
+  fmt.Println(student)
+  fmt.Println(student.name)
+  fmt.Println(student.Person.name)
+}
+
+// 输出
+{0xc000090180 100 钉钉空间3号楼403}
+大柱子
+大柱子
+```
+
+#### 2、接口
+
+
+
 
 
 
