@@ -5976,6 +5976,399 @@ func main() {
 
 #### 2、接口
 
+接口（interface）定义了一个对象的行为规范，只定义规范不实现,由具体的对象来实现规范的细节。
+
+**接口**
+
+****
+
+在Go语言中接口（interface）是一种类型，一种抽象的类型。
+
+​	interface是一组method的集合，是duck-type programming的一种体现。接口做的事情就像是定义一个协议（规则），只要一台机器有洗衣服和甩干的功能，我们就称它为洗衣机。不关心属性（数据），只关心行为（方法）。
+
+​	为了保护你的Go语言职业生涯，请牢记接口（interface）是一种类型。
+
+**为什么要使用接口**
+
+```go
+type Cat struct{}
+
+func (c Cat) Say() string {
+  return "喵喵喵"
+}
+
+type Dog struct{}
+
+func (d Dog) Say() string {
+  return "汪汪汪"
+} 
+
+func main() {
+  c := Cat{}
+  fmt.Pritntln("猫：", c.Say())
+  
+  d := Dog{}
+  fmt.Pritntln("狗：", d.Say())
+}
+```
+
+上面代码中定义了猫和狗两种类型，都具有Say方法，但是main函数中明显有重复代码，如果我们再加上其他动物的话，我们的代码就会一直重复下去。那么我们能不能把他们当成“能叫的动物”来处理呢？
+
+Go语言未科解决类似上面的问题，就设计了接口这个概念，接口区别于我们之前所有的具体类型，接口是一种抽象的类型。当你看到一个接口类型的值时，你不知道他是什么，唯一知道的事通过他的方法能做什么。
+
+**接口定义**
+
+Go语言提倡面向接口编程。
+
+```go
+接口是一个或多个方法签名的集合。
+任何类型的方法集中只要拥有该接口"对应的全部方法"签名，就表示它"实现"了该接口,无须在该类型上显示声明实现了哪个接口。这称为structural typing。所谓对应方法，是指有相同名称、参数列表(不包括参数名)以及返回值。当然，该类型还可以有其他方法.
+
+接口只有方法声明，没有实现和数据字段。
+接口可以匿名嵌入其他接口，或嵌入到结构体中。
+对象赋值给接口时，就会发生拷贝，而接口内部存储的是指向这个复制品的指针，既无法修改复制品的状态，也无法获取指针。
+只有当接口存储的类型和对象都为nil时，接口才等于nil。
+接口调用不会做receiver的自动转换。
+接口同样支持匿名字段方法。
+接口也可以实现类似oop中的多态。
+空接口可以作为任何类型数据的容器。
+一个类型可以实现多个接口。
+接口命名习惯以er结尾。
+```
+
+每个接口由数个方法组成，接口的定义格式如下：
+
+```GO
+type 接口类型名 interface{
+  方法名1(参数列表1) 返回值列表1
+  方法名2(参数列表2) 返回值列表2
+  ……
+}
+```
+
+其中：
+
+```GO
+1.接口名：
+	使用type将接口定义为自定义的类型名。Go的接口在命名时，一般会在单词后面添加er，如有写操作的接口叫Writer，有字符串功能的接口叫Stringer。接口命名做好要能突出该接口的类型含义。
+2.方法名：
+当方法名首字母是大写且这个接口类型名首字母也是大写时，这个方法可以被接口所在的包(package)之外的代码访问。
+3.参数、返回值列表：
+	参数列表和返回值列表中的参数变量名可以省略。
+```
+
+举例：
+
+```GO
+type Writer interface{
+  Write([]byte) error
+}
+```
+
+当你看到这个接口类型的值时，你不知道他是什么，唯一知道的就是可以通过它的Write方法来做一些事情。
+
+**实现接口的条件**
+
+一个对象只要实现了接口中的方法，那么就实现了这个接口。换句话说，接口就是一个需要实现的方法列表。
+
+我们来定义一个Sayer接口：
+
+```GO
+// Sayer接口
+type Sayer interface {
+  say()
+}
+
+// 定义cat和dog两个结构体
+type Cat struct {}
+
+type Dog struct {}
+```
+
+因为Sayer接口中只有一个say方法，所以我们只需要给dog和cat分别实现say方法就可以实现Sayer接口了。
+
+```GO
+// dog实现Sayer接口
+func (d Dog) say {
+  fmt.Println("汪汪汪~")
+}
+
+// cat实现Sayer接口
+func (c Cat) say {
+  fmt.Println("喵喵喵~")
+}
+```
+
+接口的实现就是这么简单，只要实现了接口中的所有方法，就实现了这个接口。
+
+**接口类型变量**
+
+实现了接口有什么用？
+
+接口类型变量能够存储所有实现了该接口的实例。例如上面的实例中，Sayer类型的变量能够存储dog和cat类型的变量。
+
+```GO
+func main() {
+	// 声明Sayer类型变量
+	var sayer Sayer
+	// sayer.say()  // panic: runtime error: invalid memory address or nil pointer dereference
+	// 实例化dog和cat
+	cat := Cat{}
+	dog := Dog{}
+
+	sayer = cat // 将cat实例赋值给sayer
+	sayer.say() // 喵喵喵
+
+	sayer = dog  // 将dog实例赋值给sayer
+	sayer.say() // 汪汪汪
+}
+
+// 输出
+喵喵喵
+汪汪汪
+```
+
+**值接收者和指针接收者实现接口的区别**
+
+使用值接收者实现接口和使用指针接收者实现接口有什么区别呢？下面我们通过一个例子看一下其中的区别。
+
+我们有一个Move接口和一个Dog结构体。
+
+```GO
+type Mover interface {
+	move()
+}
+
+type Dog struct{}
+```
+
+**值接收者实现接口**
+
+```go
+// 值接收者实现接口
+func (d Dog) move() {
+	fmt.Println("dog会动~")
+}
+```
+
+此时实现接口的是Dog类型：
+
+```GO
+func main() {
+  var move Mover
+	var dogValue = Dog{} // Dog类型
+	move = dogValue      // move 可以接收Dog类型
+	move.move()
+
+	var dogPointer = &Dog{} // *Dog类型
+	move = dogPointer       // move 可以接收*Dog类型
+	move.move()
+}
+```
+
+从上面的代码中我们可以发现，使用值接收者实现接口之后，不管是Dog结构体还是结构体指针`*Dog`类型的变量都可以赋值给该接口变量。因为Go语言中有对指针类型变量求值的语法糖，Dog指针dogPointer内部会自动求值`*dogPointer`.
+
+**指针接收者实现接口**
+
+同样的代码我们再来测试一下使用指针接收者有什么区别：
+
+```go
+func (d *Dog) move() {
+  fmt.Println("汪汪汪")
+}
+
+func main() {
+  var move Mover
+  var dogValue Dog{}
+  move = dogValue // move不可接收dog类型
+  
+  var dogPointer &Dog{}  // dogPointer是*Dog类型
+  move = dogPointer  // move可以接收*Dog类型
+}
+```
+
+此时实现Mover接口的是*Dog类型，所以不能给move传Dog类型的dogValue，此时move只能存储 ` *Dog `类型的值。
+
+**下面的代码是一个比较好的面试题**
+
+请问下面的代码是否能通过编译？
+
+```GO
+type People interface {
+  Speak(string) string
+}
+
+type Student struct {}
+
+func (s *Student) Speak(think string) (talk string) {
+	if think == "dsb" {
+		talk = "大帅币"
+	} else {
+		talk = "小水币"
+	}
+	return
+}
+
+func main() {
+  // 面试题
+	var people People = Student{}
+	think := "the"
+	people.Speak(think)
+}
+
+// IDE在var people People = Student{}报错，因为实现People接口的*Studnet类型，使用Student类型无法编译
+运行输出：
+cannot use Student literal (type Student) as type People in assignment:
+        Student does not implement People (Speak method has pointer receiver)
+
+// 修改people类型
+var people People = &Student{}
+
+// go run main.go
+小水币
+```
+
+**类型与接口的关系**
+
+****
+
+**一个类型实现多个接口**
+
+一个类型可以同时实现多个接口，而接口间彼此独立，不知道对方的实现。例如：狗可以叫，也可以跑。我们就分别定义Sayer和Runner接口，如下：
+
+```go
+package main
+
+import "fmt"
+
+// 类型与接口
+
+// 一个类型可以同时实现多个接口，而接口间彼此独立，不知道对方的实现。
+// 例如：狗可以叫，也可以跑。我们就分别定义Sayer和Runner接口
+
+type Sayer interface {
+	say()
+}
+
+type Runner interface {
+	run()
+}
+
+type Dog struct {
+	name string
+}
+
+// dog 可以同时实现以上两个接口
+
+// 实现Sayer接口
+func (d Dog) say() {
+	fmt.Printf("%s会叫~\n", d.name)
+}
+
+// 实现Runner接口
+func (d Dog) run() {
+	fmt.Printf("%s会跑~\n", d.name)
+}
+
+func main() {
+	var sayer Sayer
+	var runner Runner
+
+	dog := Dog{
+		"阿黄",
+	}
+	sayer, runner = dog, dog
+	sayer.say()
+	runner.run()
+}
+
+// 输出
+阿黄会叫~
+阿黄会跑~
+```
+
+**多个类型实现同一接口**
+
+Go语言中不同的类型还可以实现同一接口。如下：
+
+```GO
+package main
+
+import "fmt"
+
+type Runner interface {
+	run()
+}
+
+type Dog struct {
+	name string
+}
+
+// 实现Runner接口
+func (d Dog) run() {
+	fmt.Printf("%s会跑~\n", d.name)
+}
+
+// 多个类型实现同一接口
+// 狗会跑 猫咪也会跑 可以同时实现Runner接口
+type Cat struct {
+	bread string
+}
+
+func (c Cat) run() {
+	fmt.Printf("%s也会跑~\n", c.bread)
+}
+
+func main() {
+	var runner Runner
+
+	dog := Dog{
+		"阿黄",
+	}
+	cat := Cat{
+		"加菲猫",
+	}
+	runner = dog
+	runner.run()
+
+	runner = cat
+	runner.run()
+}
+
+// 输出
+阿黄会跑~
+加菲猫也会跑~
+```
+
+并且一个接口的方法，不一定由一个类型完全实现，接口的方法可以通过在类型中嵌入其他类型或者结构体来实现。
+
+```GO
+// WashingMachine 洗衣机
+type WashingMachine interface {
+  wash()
+  dry()
+}
+
+// 甩干器
+type dryer struct {}
+
+// 实现WashingMachine接口的dry()方法
+func (d dryer) dry() {
+  fmt.Println("甩一甩~")
+}
+
+// 海尔洗衣机
+type haier struct {
+  // 嵌入甩干器
+  dryer
+}
+
+// 实现WashingMachine的wash()方法
+func (h haier) wash() {
+  fmt.Println("洗洗更健康~")
+}
+```
+
 
 
 
