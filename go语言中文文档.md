@@ -6369,11 +6369,183 @@ func (h haier) wash() {
 }
 ```
 
+**接口嵌套**
 
+接口与接口之间可以通过嵌套创造出新的接口。
 
+```GO
+// Sayer
+type Sayer interface {
+  say()
+}
 
+// Mover
+type Mover interface {
+  move()
+}
 
+// 接口嵌套
+type Animal interface {
+  Sayer
+  Mover
+}
 
+func main() {
+  animal := Monkey{"猴哥"}
+	animal.say()
+	animal.run()
+}
+
+// 输出
+猴哥会说话~
+猴哥会跑步~
+```
+
+**空接口**
+
+****
+
+**空接口的定义**
+
+空接口是指没有定义任何方法的接口。因此任何类型都实现了空接口。
+
+空接口类型的变量可以存储任意类型的变量。
+
+```GO
+func main() {
+  // 空接口
+	var x interface{}
+	str := "2zyyyyy.com"
+	x = str
+	fmt.Printf("x type = %T, x value = %s\n", x, x)
+
+	num := 100
+	x = num
+	fmt.Printf("x type = %T, x value = %d\n", x, x)
+
+	bool := true
+	x = bool
+	fmt.Printf("x type = %T, x value = %v\n", x, x)
+}
+
+// 输出
+x type = string, x value = 2zyyyyy.com
+x type = int, x value = 100
+x type = bool, x value = true
+```
+
+**空接口的应用**
+
+**空接口作为函数的参数**
+
+使用空接口实现可以接收任意类型的函数参数。
+
+```GO
+// 空接口作为函数参数
+func test(a interface{}) {
+  fmt.Printf("type:%T value:%v\n", a, a)
+}
+```
+
+空接口作为map的值
+
+使用空接口实现可以保存任意值的字典。
+
+```GO
+// 空接口作为map值
+studentInfo := make(map[string]interface{})
+studentInfo["one"] = "中文"
+studentInfo["two"] = 100
+studentInfo["three"] = true
+fmt.Println(studentInfo)
+```
+
+**类型断言**
+
+空接口可以存储任意类型的值，那我们如何获取其存储的而具体数据呢？
+
+**接口值**
+
+一个接口的值（简称接口值）是由一个具体类型和具体类型的值两部分组成的。这两部分分别称为接口的动态类型和动态值。
+
+举例：
+
+```GO
+var w io.Wtirer
+
+w = os.Stdout
+w= new(byets.Buffer)
+w = nil
+```
+
+图解：
+
+![img](https://tva1.sinaimg.cn/large/008i3skNly1gz1g6ju1gxj310e0tc76d.jpg)
+
+想要判断空接口中的值这个时候就可以使用类型断言，其语法格式：
+
+```GO
+x.(T)
+```
+
+其中：
+
+```GO
+X：表示类型为interface{}的变量
+T：表示断言x可能是的类型
+```
+
+该语法返回两个参数，第一个参数是x转化为T类型后的变量，第二个值是一个布尔值，若为true则表示断言成功，为false则表示断言失败。
+
+举例：
+
+```GO
+func typeAssert(s interface{}) (info string) {
+	info, ok := s.(string)
+	if ok {
+		fmt.Printf("断言成功, info:%s\n", info)
+	} else {
+		fmt.Println("断言失败")
+	}
+	return
+}
+
+func main() {
+  typeAssert("123456789")
+}
+
+// 输出
+断言成功, info:123456789
+```
+
+以上事例中如果需要断言多次则需要写多个if判断，这个时候我们可以使用switch语句来实现：
+
+```GO
+func typeAssertSwitch(s interface{}) (info string) {
+	switch v := s.(type) {
+	case string:
+		fmt.Printf("x is a string，value is %v\n", v)
+	case int:
+		fmt.Printf("x is a int is %v\n", v)
+	case bool:
+		fmt.Printf("x is a bool is %v\n", v)
+	default:
+		fmt.Println("type is unsupport")
+	}
+	return
+}
+
+func main() {
+  typeAssertSwitch(false)
+}
+
+// 输出
+x is a bool is false
+```
+
+因为空接口可以存储任意类型的值的特点，所以空接口在Go语言中的使用十分广泛。
+
+关于接口需要注意的是，只有当有两个或两个以上具体类型必须以相同的方式进行处理时才需要定义接口。不要为了接口而写接口，那样只会增加不必要的抽象，导致不必要的运行时消耗。
 
 ### 网络编程
 
