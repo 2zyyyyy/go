@@ -6579,9 +6579,204 @@ x is a bool is false
 
 按照以太网协议的规则我们可以依靠MAC地址来向外发送数据。理论上依靠MAC地址，你电脑的网卡就可以找到身在时间另一个角落的网卡了，但是这种做法有一个重大缺陷就是以太网采用广播方式发送数据包，所有成员人寿一“包”，不仅效率低，而且发送的数据只能局限在发送者所在的子网络。也就是说如果两台计算机不在一个子网络，广播是传不过去的。这种设计是合理且必要的，因为如果互联网上每一台计算机都会接收到互联网上发送的所有数据包，那是不现实的。
 
+因此，必须找到一种方法区分哪些MAC地址属于同一个子网络，那些不是。如果是同一个子网络，就采用广播方式发送，否则就采用“路由”方式发送。这就导致了“网络层”的诞生。它的作用是引进一套新的地址，使得我们能够区分不同的计算机是否属于同一个自我网络。这套地址就叫做“网址”。
+
+“网络层”出现以后，每台计算机有了两种地址，一种是MAC地址，另一种是网络地址。两种地址之间没有任何联系，MAC地址是绑定在网卡上的，网络地址则是网络管理员分配的。网络地址帮助我们确定计算机所在的子网络，MAC地址则将数据包发送到该子网络中的目标网卡。因此，从逻辑上可以推断，必定是先处理网络地址，然后在处理MAC地址。
+
+规定网络地址的协议，叫做IP协议。他所定义的地址，就被称为IP地址。目前，广泛采用的是IP协议第四版，简称IPv4。IPv4这个版本规定，网络地址由32个二进制位组成，我们通常习惯用分成四段的十进制数表示IP地址，从0.0.0.0一直到255.255.255.255。
+
+根据IP序偶诶哦发送的数据，就叫做IP数据包。IP数据包也分为标头和数据两个部分。标头部分主要包括版本、长度、IP地址等信息。数据部分则是IP数据包的具体内容。IP数据包的标头部分的长度为20到60字节，整个数据包的总长度最大为65535字节。
+
+**传输层**
+
+有了MAC地址和IP协议，我们已经可以在互联网上任意两台主机上建立通信。但问题是同一台主机上会有许多程序都需要用网络收发数据，比如QQ和浏览器这两个程序都需要连接互联网并收发数据，我们如何区分某个数据包到底是归属那个程序的呢？也就是说，我们还需要一个参数，表示这个数据包到底供哪个程序（进程）使用。这个参数就叫做“端口”（port），他其实是每一个使用网卡的程序的编号。每个数据包都发送到主机的特定端口，所以不同的程序就能取到自己所需要的数据。
+
+“端口”是0到65535之间的一个整数，正好16个二进制位。0到1023端口被系统占用，用户只能选择大于1023的端口。有了IP和端口我们就能实现唯一确定互联网上的一个程序，劲儿实现网络的程序通信。
+
+我们必须在数据包中加入端口信息，这就需要新的协议。最简单的实现叫做UDP协议，它的格式几乎就是在数据前面，加上端口号。UDP数据包，也是由标头和数据两部分组成，标头部分主要定义了发出端口和接收端口，数据部分就是具体的内容。UDP数据包非常简单，标头部分一共只有8个字节，总长度不超过65535个字节，正好放进一个IP数据包。
+
+UDP协议的优点是比较简单，容易实现，但是缺点是可靠性差，一旦数据包发出，无法知道对方是否收到。为了解决这个问题，提高网络可靠性，TCP协议就诞生了。TCP协议能够确保数据不会丢失。他的缺点是过程复杂、实现困难、消耗较多的资源。TCP数据包没有长度限制，理论上可以无限长，但是为了保证网络的效率，通常TCP数据包的长度不会超过IP数据包的长度，以确保单个TCP数据包不必再分割。
+
+**应用层**
+
+应用程序收到传输层的数据，接下来就要对数据进行解包。由于互联网是开放架构，数据来源五花八门们必须事先规定号通信的数据格式，否则接收方根本无法获得真正发送的数据内容。应用层的作用就是规定应用程序使用的数据格式，例如我们TCP协议之上常见的email、HTTP、FTP等协议，这些协议就组成了互联网协议的应用层。
+
+如下图所示，发送方的HTTP数据进过互联网的传输过程中会一次添加各层协议的标头信息，接收方收到数据包之后再依次根据协议解包得到数据。
+
+![img](https://tva1.sinaimg.cn/large/008i3skNly1gz2qwzamnhj318u0u0tcq.jpg)
+
 
 
 #### 2、socket编程
+
+Socket是BSD UNIX的进程通信机制，通常也称作“套接字”，用于描述IP地址和端口，是一个通信链的句柄。Socket可以理解为TCP/IP网络的API，它定义了许多函数或例程，程序猿可以用它们来开发TCP/IP网络上的应用程序。电脑上运行的应用程序通常通过套接字向网络发出请求或者应答网络请求。
+
+**socket图解**
+
+socket是应用层与TCP/IP协议族通信的中间软件抽象层。在设计模式中，socket其实就是一个门面模式，他把复杂的TCP/IP协议族隐藏在socket后面，对用户来说只需要调用socket规定的相关函数，让socket去组织符合指定的协议数据然后进行通信。
+
+![img](https://tva1.sinaimg.cn/large/008i3skNly1gz2rf1k6otj317n0u0q6s.jpg)
+
+- socket又称套接字，应用程序通常通过套接字向网络发出请求或者 应答网络请求
+- 常用的socket类型有两种：流式socket和数据包式socket，流式是一种面向连接的socket，针对与面向连接的TCP服务应用，数据包式socket是一种无连接的socket，针对于无连接的UDP服务应用
+- TCP：比较靠谱，面向连接，比较慢
+- UDP：不是太靠谱，比较快
+
+举个例子：TCP就是货到付款的快递，送到家还必须见到你人才算一整套流程。UDP就像某快递柜一扔就走不管你收到收不到，一般直播用UDP。
+
+**TCP编程**
+
+**Go语言实现TCP通信**
+
+TCP/IP（Transmission Control Protocol/Internet Protocol）即传输控制协议/网际通信，是一种面向连接（连接导向）的、可靠的、基于字节流的传输层（transport layer）通信协议，因为是面向连接的协议，数据像水流一样传输，会存在黏包问题。
+
+**TCP服务端**
+
+一个TCP服务端可以同时连接很多个客户端，例如世界各地的用户使用自己电脑上的浏览器访问淘宝网。因为Go语言中创建多个goroutine实现并发非常方便和高效，所以我们可以每建立一次连接就创建一个goroutine去处理。
+
+TCP服务端程序的处理流程：
+
+```GO
+1.监听端口
+2.接收客户端请求建立链接
+3.创建goroutine处理链接
+```
+
+我们使用Go语言的net包实现的TCP服务端代码如下：
+
+```GO
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"net"
+)
+
+// TCP server端
+
+// 处理函数
+func process(conn net.Conn) {
+	defer conn.Close()
+	for {
+		reader := bufio.NewReader(conn)
+		var buf [128]byte
+		n, err := reader.Read(buf[:]) // 读取数据
+		if err != nil {
+			fmt.Println("read from client failed, err:", err)
+			break
+		}
+		recvStr := string(buf[:n])
+		fmt.Println("收到client端发来的数据:", recvStr)
+		conn.Write([]byte(recvStr)) // 发送数据
+	}
+}
+
+func main() {
+	listen, err := net.Listen("tcp", "127.0.0.1:20000")
+	if err != nil {
+		fmt.Print("listen failed, err:", err)
+		return
+	}
+	for {
+		conn, err := listen.Accept() // 建立连接
+		if err != nil {
+			fmt.Println("accept failed, err:", err)
+			continue
+		}
+		go process(conn) // 启动gotoutine处理连接
+	}
+}
+```
+
+**TCP客户端**
+
+一个TCP客户端进行TCP通信的流程如下：
+
+```GO
+1.建立与服务端的连接
+2.进行数据收发
+3.关闭连接
+```
+
+使用Go语言的net包实现的TCP客户端如下：
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"net"
+	"os"
+	"strings"
+)
+
+// client
+func main() {
+	conn, err := net.Dial("tcp", "127.0.0.1:20000")
+	if err != nil {
+		fmt.Println("err:", err)
+		return
+	}
+	defer conn.Close()
+	inputReader := bufio.NewReader(os.Stdin)
+	for {
+		input, _ := inputReader.ReadString('\n') // 读取用户输入内容
+		inputInfo := strings.Trim(input, "\r\n")
+		if strings.ToUpper(inputInfo) == "Q" {
+			//输入q退出
+			return
+		}
+		_, err := conn.Write([]byte(inputInfo)) // 发送数据
+		if err != nil {
+			fmt.Println("数据发送失败，err:", err)
+			return
+		}
+		buf := [512]byte{}
+		n, err := conn.Read(buf[:])
+		if err != nil {
+			fmt.Println("recv failed, err:", err)
+			return
+		}
+		fmt.Println("向服务端发送数据:", string(buf[:n]))
+	}
+}
+```
+
+先启动server的main.go（go run main.go），再启动client的main.go。再client端输入任意内容回车回就可以在server端看到对应的数据，从而实现TCP通信。
+
+![client端](https://tva1.sinaimg.cn/large/008i3skNly1gz3xll0m8tj30q40383yz.jpg)
+
+![server端](https://tva1.sinaimg.cn/large/008i3skNly1gz3yelm9ldj30sa01sq38.jpg)
+
+**UDP编程**
+
+**Go语言实现UDP通信**
+
+UDP协议（User Datagram Protocol）中文名称是用户数据协议,是OSI（Open System Interconnection，开放式系统互联 ）参考木星中一种无连接的传输层协议，不需要建立连接就能直接进行数据发送和接收，属于不可靠的、没有时序的通信，但是UDP协议的实时性比较好，通常用于视频直播相关领域。
+
+**UDP服务端**
+
+使用Go语言的net包实现的UDP服务端代码如下：
+
+```GO
+
+```
+
+**UDP客户端**
+
+```GO
+
+```
+
+
+
+**TCP黏包**
+
+
+
+
 
 
 
