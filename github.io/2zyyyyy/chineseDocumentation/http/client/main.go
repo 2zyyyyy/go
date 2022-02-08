@@ -7,8 +7,6 @@ import (
 )
 
 func main() {
-	//resp, _ := http.Get("http://www.baidu.com")
-	//fmt.Println(resp)
 	res, err := http.Get("http://127.0.0.1:8000/golang")
 	if err != nil {
 		fmt.Println("get failed, err:", err)

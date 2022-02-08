@@ -7093,22 +7093,138 @@ func main() {
 **HTTP服务端**
 
 ```GO
+package main
 
+import (
+	"fmt"
+	"net/http"
+)
+
+func main() {
+	// 单独写回调函数
+	http.HandleFunc("/golang", myHandle)
+	err := http.ListenAndServe("127.0.0.1:8000", nil)
+	if err != nil {
+		fmt.Println("listen server failed, err:", err)
+		return
+	}
+}
+
+// handle 函数
+func myHandle(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r.RemoteAddr, "连接成功")
+	// 请求方式 get/post/put/delete/update
+	fmt.Println("method", r.Method)
+	fmt.Println("url:", r.URL.Path)
+	fmt.Println("header:", r.Header)
+	fmt.Println("body:", r.Body)
+	// 回复
+	w.Write([]byte("testInfo!!!"))
+}
 ```
 
 **HTTP客户端**
 
 ```GO
+package main
 
+import (
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	res, err := http.Get("http://127.0.0.1:8000/golang")
+	if err != nil {
+		fmt.Println("get failed, err:", err)
+	}
+	defer res.Body.Close()
+	// 200 OK
+	fmt.Println(res.Status)
+	fmt.Println(res.Header)
+
+	buf := make([]byte, 1024)
+	for {
+		// 接收服务端信息
+		n, err := res.Body.Read(buf)
+		if err != nil && err != io.EOF {
+			fmt.Println(err)
+			return
+		} else {
+			fmt.Println("读取完毕")
+			res := string(buf[:n])
+			fmt.Println(res)
+			break
+		}
+	}
+}
 ```
 
+server：
 
+![image-20220208103523722](https://tva1.sinaimg.cn/large/008i3skNly1gz5wgu9x5sj310s04g3yx.jpg)
+
+client：
+
+![image-20220208103621426](https://tva1.sinaimg.cn/large/008i3skNly1gz5wht15o6j313y03874n.jpg)
 
 #### 4、webSocket编程
 
+**websocket简介**
 
+- websocket是一种在单个TCP联=连接上进行全双工通信的协议
+- 文websocket使得客户端和服务器之间的数据交换变得更加简单，允许服务端主动向客户端推送数据
+- 在websocket API中，浏览器和服务器只需要完成一次握手，两者之间就直接可以创建持久性的连接，并进行双向数据输出
+- 需要安装第三方的包（go get -u -v github.com/gorilla/websocket）
 
 ### 并发编程
+
+#### 1、并发介绍
+
+**进程和线程**
+
+```GO
+A.进程是程序在操作系统中的一次执行过程，系统进行资源分配和调度的一个独立单位。
+B.线程是进程的一个执行实体，是CPU调度和分派的基本单位，它是比继承更小的能独立运行的基本单位。
+C.一个进程可以创建和撤销多个线程；同一个进程中的多个线程之间可以并发执行。
+```
+
+**并发和并行**
+
+```GO
+A.多线程程序在一个核CPU上运行，就是并发。
+B.多线程程序在多个核的CPU上运行，就是并行。
+```
+
+**协程和线程**
+
+```GO
+协程：独立的栈空间，共享堆空间，调度由用户自己控制，本质上有点类似用户级线程，这些用户级线程的调度也是自己实现的。
+线程：一个线程上可以跑多个协程，协程是轻量级的线程。
+```
+
+**goroutine只是由官方实现的超级”线程池**“
+
+每个实例<font color=red>`4~5kb`</font>的栈内存占用和由于实现机制而大幅减少的创建和销毁开销是go高并发的根本原因。
+
+**并发不是并行**
+
+并发主要由切换时间片来实现”同时“运行，并行则是直接利用多核实现多线程的运行，go可以设置使用核数，以发挥多核计算机的能力。
+
+*goroutine奉行通过通信来共享内存，而不是共享内存来通行。*
+
+#### 2、goroutine
+
+
+
+
+
+
+
+
+
+
 
 
 
