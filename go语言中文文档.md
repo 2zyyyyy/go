@@ -7216,15 +7216,145 @@ B.多线程程序在多个核的CPU上运行，就是并行。
 
 #### 2、goroutine
 
+在java/c++中我们要实现并发编程的时候，我们通常需要自己维护一个线程池，并且需要自己去包装一个又一个的任务，同事需要自己去调度线程执行任务并维护上下文切换，这一切会耗费开发者大量的精力。那么是否有一种机制，开发人员只需要定义很多个任务，让系统去帮助我们把这些任务分配到CPU上实现并发执行呢？
 
+Go余元中的goroutine就是这样一种机制，goroutine的概念类似于线程，但goroutine是由Go的运行时（runtime）调度和管理的。Go程序会智能地将goroutine中的任务合理地分配给每个CPU。Go语言之所以被称为现代化的编程语言，就是因为他在语言层面已经内置了调度和上下文切换的机制。
 
+在Go语言编程中你不需要自己去写进程、线程、协程，你的技能包里只有一个技能-goroutine，当你需要让某个任务并发执行的时候，你只需要把这个任务包装成一个函数，开启一个goroutine去执行这个函数就可以了。
 
+**使用goroutine**
 
+Go语言中使用goroutine非常简单，只需要在调用函数的时候在前面加上go关键字，就可以为一个函数创建一个goroutine。
 
+一个goroutine必定对应一个函数，可以创建多个goroutine去执行相同的函数。
 
+**启动单个goroutine**
 
+示例：
 
+```GO
+package main
 
+import "fmt"
+
+// goroutine
+
+func hello() {
+	fmt.Println("hello goroutine!")
+}
+
+func main() {
+	go hello()
+	fmt.Println("hello goroutine done!")
+}
+```
+
+以上例子如果没有启动一个goroutine去执行hello函数，那么main中的语句是串行的，也就是会先打印hello goroutine！在打印hello goroutine done！。但是在hello函数前面添加go关键字去启动一个新的goroutine执行hello函数，输出的顺序就会相反或者只打印hello goroutine done!。
+
+![image-20220209103152618](https://tva1.sinaimg.cn/large/008i3skNly1gz71ziifv4j310q04at9x.jpg)
+
+**解析**
+
+在程序启动时，Go程序会给main()函数创建一个默认的goroutine。
+
+当main()函数的时候该goroutine就结束了，所有在main()函数中启动的goroutine会一同结束。所以go hello()的goroutine和main()的goroutine谁先结束就决定输出结果，如果后者先结束那么就不会打印hello函数。在main函数中添加强制等待之后两次输出都会执行。
+
+```go
+func main() {
+	defer time.Sleep(time.Second)
+	go hello() // 启动一个goroutine执行hello函数
+	fmt.Println("hello goroutine done!")
+}
+// 输出
+hello goroutine done!
+hello goroutine!
+```
+
+执行上面的代码你会发现，这一次先打印main goroutine done!，然后紧接着打印Hello Goroutine!。
+
+首先为什么会先打印main goroutine done!是因为我们在创建新的goroutine的时候需要花费一些时间，而此时main函数所在的goroutine是继续执行的。
+
+**启动多个goroutine**
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+// goroutine
+
+var wg sync.WaitGroup
+
+func hello(i int) {
+	defer wg.Done() // goroutine结束就登记-1
+	fmt.Println("hello goroutine!", i)
+}
+
+func main() {
+	for i := 0; i < 10; i++ {
+		wg.Add(1) // 启动一个goroutine就登记+1
+		go hello(i)
+	}
+	wg.Wait() // 等待所有登记的goroutine都结束
+}
+```
+
+![image-20220209141204981](https://tva1.sinaimg.cn/large/008i3skNly1gz78clrqrkj308w07ut95.jpg)
+
+多次执行上面的代码，会发现每次打印的数字的顺序都不一致。这是因为10个goroutine是并发执行的，而goroutine的调度是随机的。
+
+**注意**
+
+如果主协程退出了，其他任务还执行吗？
+
+```GO
+func main() {
+	// helloGoroutine()
+	// 主协程退出其他任务是否还会执行
+	go func() {
+		i := 0
+		for {
+			i++
+			fmt.Printf("new goroutine %d\n", i)
+			time.Sleep(time.Second)
+		}
+	}()
+	i := 0
+	for {
+		i++
+		fmt.Printf("main goroutine %d\n", i)
+		time.Sleep(time.Second)
+		if i == 2 {
+			break
+		}
+	}
+}
+
+// 输出
+main goroutine 1
+new goroutine 1
+main goroutine 2
+new goroutine 2
+```
+
+**goroutine与线程**
+
+**可增长的栈**
+
+OS线程（操作系统线程）一般都有固定的栈内存（通常为2MB），一个goroutine的栈在其生命周期开始只有很小的栈（通常2kb），goroutine的栈不是固定的，他可以按需增大和缩小，goroutine的栈大小限制可以达到1GB，虽然极少情况会用到这个值。所以在Go语言中一次创建十万左右的goroutine也是可以的。
+
+**goroutine调度**
+
+GMP是Go语言运行时（runtime）层面的实现，是Go语言自己实现的一套调度系统。区别于操作系统调度OS线程。
+
+- G：就是个goroutine，里面除了存放本goroutine信息外，还有与所在P的绑定等信息
+- P：管理着一组goroutine队列，P里面会存储当前goroutine运行的上下文环境（函数指针，堆栈地址及地址边界），P会对自己管理的goroutine队列做一些调度（比如把占用CPU时间较长的goroutine暂停、运行后续的goroutine等等）当自己的队列消费完了就去全局队列里取，如果全局队列也消费完了就会去其他P的队列里抢任务。
+- M：（machine）是Go运行时（runtime）对操作系统内核线程的虚拟，M与内核线程一般是一一映射的关系，一个goroutine最终是要放到M上执行的；
+
+P与M一般也是一一对应的。他们的关系是：P管理着一组挂载在M上运行。
 
 
 
