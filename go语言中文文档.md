@@ -7360,7 +7360,110 @@ P的个数是通过runtime.GOMAXPROCS设定（最大256），Go1.5版本之后�
 
 但从线程调度讲，Go语言相比起其他语言的优势在于OS线程是由OS内核来调度的，goroutine则是由Go运行时（runtime）自己的调度器调度的，这个调度器使用一个称为m:n调度的技术（复用/调度m个goroutine到n个OS线程）。其一大特点是goroutine的调度是在用户态下完成的，不涉及内核态与用户态之间的频繁切换，包括内存的分配与释放，都是在用户态维护着一块大的内存池，不直接调用系统的malloc函数（除非内存池需要改变），成本比调度OS线程低很多。另一方面充分利用了多核的硬件资源，近似的把若干goroutine均分在物理线程上，再加本身goroutine的超轻量，以上种种保证了go调度方面的性能。
 
+#### 3、runtime包
 
+**runtime.Gosched()**
+
+让出CPU时间片，重新等待安排任务（大概可以理解为本来计划的好好地周末出去烧烤，但是你妈让你去相亲，两种情况第一就是你的相亲速度非常快，见面就黄不耽误你的烧烤计划，第二种情况就是相亲过程非常久，耽误了烧烤计划，但是还想吃，还得去烧烤）
+
+```GO
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+// runtime
+
+func main() {
+	go func(s string) {
+		for i := 0; i < 2; i++ {
+			fmt.Println(s)
+		}
+	}("runtime.Gosched~")
+
+	// 主协程
+	for i := 0; i < 2; i++ {
+		// 切一下 再次分配任务
+		runtime.Gosched()
+		fmt.Println("主协程")
+	}
+}
+```
+
+**runtime.Goexit()**
+
+退出当前协程
+
+```GO
+func main() {
+  // runtime.Goexit()
+	go func() {
+		defer fmt.Println("A.defer")
+		func() {
+			defer fmt.Println("B.defer")
+			// 结束协程
+			runtime.Goexit()
+			defer fmt.Println("C.defer")
+			fmt.Println("B")
+		}()
+		fmt.Println("A")
+	}()
+	for {
+	}
+}
+```
+
+**runtime.GOMAXPROCE**
+
+Go运行时的调度器使用GOMAXPROCS参数来确定需要使用多少个OS线程来同时执行Go代码。默认值是机器上的CPU核数。例如在一个8核的机器上，调度器会把Go代码同时调度到8个OS线程上（GOMAXPROCE是m:n调度中的n）。
+
+#### 4、channel
+
+
+
+#### 5、goroutine池
+
+
+
+
+
+#### 6、定时器
+
+
+
+
+
+#### 7、select
+
+
+
+
+
+#### 8、并发安全和锁
+
+
+
+
+
+#### 9、sync
+
+
+
+
+
+#### 10、原子操作（atomic包）
+
+
+
+#### 11、GMP原理与调度
+
+
+
+
+
+####12、爬虫案例
 
 ### 数据操作
 
