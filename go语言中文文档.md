@@ -7419,7 +7419,244 @@ func main() {
 
 Go运行时的调度器使用GOMAXPROCS参数来确定需要使用多少个OS线程来同时执行Go代码。默认值是机器上的CPU核数。例如在一个8核的机器上，调度器会把Go代码同时调度到8个OS线程上（GOMAXPROCE是m:n调度中的n）。
 
+Go语言中可以通过runtime.GOMAXPROCS()函数设置当前程序并发时占用的CPU核心数。
+
+Go1.5版本之前，默认是单核心执行。Go1.5版本之后，默认使用全部的CPU逻辑核心数。
+
+我们可以通过将任务分配到不同的CPU逻辑核心数上实现并行的效果，这里举个例子：
+
+```GO
+// 将任务分配到不同的CPU逻辑核心上实现并行的效果
+func a() {
+	for i := 0; i < 10; i++ {
+		fmt.Println("A:", i)
+	}
+}
+
+func b() {
+	for i := 0; i < 10; i++ {
+		fmt.Println("B:", i)
+	}
+}
+
+func main() {
+  runtime.GOMAXPROCS(2)
+	go a()
+	go b()
+	time.Sleep(time.Second)
+}
+```
+
+Go语言中的操作系统线程和goroutine的关系:
+
+1. 一个操作系统线程对应用户态多个goroutine
+2. go程序可以同事使用多个操作线程
+3. goroutine和OS线程是多对多的关系，即m:n
+
 #### 4、channel
+
+单纯地将函数鬓发执行是没有意义的。函数与函数间需要交换数据才能体现并发执行函数的意义。
+
+虽然可以使用共享内存进行数据交换，但是共享内存在不同的goroutine中容易发生竞态问题。为了保证数据交换的正确性，必须使用互斥量堆内存进行加锁，这种做法势必造成性能问题。
+
+Go语言的并发模型是CSP（communicating sequential processes），提倡通过同心共享内存而不是通过共享内存而实现通信。
+
+Go中的通道（channel）是一种特殊的类型。通道像一个传送带或者队列，总是遵循先入先出（first in first out）的规则，保证收发数据的顺序。每一个通道都是一个具体类型的导管，也就是声明channel的时候需要为其指定元素类型。
+
+**channel类型**
+
+channel是一种类型，一种引用类型。其声明通道类型的格式如下：
+
+`var 变量名 chan 元素类型`
+
+举例说明：
+
+```GO
+var ch1 chan int  // 声明一个传递整型的通道
+var ch2 chan bool  // 声明一个传递布尔值的通道
+var ch3 chan []int  // 声明一个传递int切片的通道
+```
+
+**创建channel**
+
+通道是引用类型，通道类型的空值是nil
+
+```go
+var ch chan int
+fmt.Println(ch) // <nil>
+```
+
+声明的通道需要使用make函数初始化之后才能使用。
+
+创建channel的格式如下：
+
+```go
+make(chan 元素类型, [缓冲大小])  // 缓冲大小可选
+
+// 举例说明
+ch4 := make(chan int)
+ch5 := make(chan bool)
+ch6 := make(chan []int)
+```
+
+**channel操作**
+
+通道有发送（send）、接收（receiver）和关闭（close）三种操作。
+
+发送和接收都使用<-符号。
+
+现在我们先使用以下语句定义一个通道：
+
+```GO
+ch := make(chan int)
+```
+
+**发送（send）**
+
+将一个值发送到通道中：
+
+```GO
+ch <- 100
+```
+
+**接收（receiver）**
+
+从一个通道接收值。
+
+```GO
+x := <- ch // 从ch中接收值并赋值给x
+<- ch // 从ch中接收值，忽略结果
+```
+
+**关闭**
+
+我们通过调用内置的close函数来关闭通道。
+
+```GO
+close(ch)
+```
+
+关于关闭通道需要注意的事情是，只有在通知接收方goroutine所有的数据都发送完毕的时候才需要关闭通道。通道是可以被垃圾回收机制回收的，它和关闭文件是不一样的，在结束操作之后关闭文件时必须操作的，但关闭通道不是必须的。
+
+关闭的通道有以下特点：
+
+```GO
+1.对一个关闭的通道再发送值就会导致panic
+2.对一个关闭的通道进行接收会一直获取值直到通道为空
+3.对一个已关闭的并且没有值的通道执行接收操作会得到对应类型的零值
+4.关闭一个已经关闭的会导致panic
+```
+
+![使用无缓冲通道在goroutine之间同步](https://tva1.sinaimg.cn/large/e6c9d24ely1gzmdn3pddyj20nx0m6767.jpg)
+
+无缓冲通道又称为阻塞的通道。示例：
+
+```GO
+func main() {
+  ch := make(chan, int)
+  ch <- 100
+  fmt.Println("发送成功~")
+}
+
+// go run main.go
+fatal error: all goroutines are asleep - deadlock!
+```
+
+为什么会出现deadlock错误呢？
+
+因为我们使用ch := make(chan int)创建的是无缓冲的通道，无缓冲的通道只有在有人接收值的时候才能发送值。就像你住的小区没有快递柜和代收点，快递员给你打电话必须要把这个物品送到你的手中，简单来说就是无缓冲的通道必须有接收才能发送。
+
+上面的代码会阻塞在ch <- 10这一行代码形成死锁，那如何解决这个问题呢？
+
+一种方法是启用一个goroutine去接收值，例如：
+
+```GO
+func receiver(ch chan int) {
+	// 接收
+	ret := <-ch
+	fmt.Println("接收成功~", ret)
+}
+
+func main() {
+	ch := make(chan int)
+	// receiver(无缓冲通道 发送前先接收 防止死锁)
+	go receiver(ch) // 启用goroutine从通道接收值
+	// sned
+	ch <- 100
+	fmt.Println("发送成功！")
+}
+
+//  go run main.go
+接收成功~ 100
+发送成功！
+```
+
+无缓冲通道上的发送操作会阻塞，直到另一个goroutine在该通道上执行接收操作，这时值才能发送成功，两个goroutine将继续执行。相反，如果接收操作先执行，接收方的goroutine将阻塞，直到两一个goroutine在该通道上发送一个值。
+
+使用无缓冲通道进行通信将导致发送和接收的goroutine同步化。因此，无缓冲通道也被称为同步通道。
+
+**有缓冲通道**
+
+为了解决以上问题还有另一种方法就是使用有缓冲的通道。
+
+![使用有缓冲的通道在goroutine之间同步数据](https://tva1.sinaimg.cn/large/e6c9d24ely1gzmdovyeeyj20m70ewgn1.jpg)
+
+我们可以在使用make函数初始化通道的时候为其指定通道的容量，例如：
+
+```GO
+func main() {
+  ch := make(chan, int, 1) // 创建一个容量=1的有缓冲区的通道
+  ch <- 100
+  fmt.Println("发送成功!")
+}
+```
+
+只要通道的容量大于零，那么该通道就是有缓冲的通道，通道的容量表示通道中能存放元素的数量。就类似小区的快递柜是有固定格子数量的，格子蛮子就无法存放，导致阻塞，只能等到别人取走一个快递员就能往里面放一个。
+
+我们可以使用内置的len函数获取通道内元素的数量，使用cap函数获取通道的容量，虽然我们很少会这么做。
+
+**close()**
+
+可以通过内置的close()函数关闭channel（如果你的管道不往里面存值或者取值的时候一定记得关闭管道）
+
+```GO
+func main() {
+  ch := make(chan int)
+	go func() {
+		for i := 0; i < 5; i++ {
+			ch <- i
+		}
+		close(ch)
+	}()
+
+	for {
+		if data, ok := <-ch; ok {
+			fmt.Println(data)
+		} else {
+			break
+		}
+	}
+	fmt.Println("main结束")
+}
+
+// go run main.go
+0
+1
+2
+3
+4
+main结束
+```
+
+**如何优雅的从通道循环取值**
+
+当通过通道发送有限的数据时，我们可以通过close函数关闭通道来告知从该通道接收值的goroutine停止等待。当通道被关闭时，往该通道发送值会引发panic，从该通道里接收的值
+
+
+
+
+
+
 
 
 
