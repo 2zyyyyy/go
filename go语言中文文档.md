@@ -7650,29 +7650,237 @@ main结束
 
 **如何优雅的从通道循环取值**
 
-当通过通道发送有限的数据时，我们可以通过close函数关闭通道来告知从该通道接收值的goroutine停止等待。当通道被关闭时，往该通道发送值会引发panic，从该通道里接收的值
+当通过通道发送有限的数据时，我们可以通过close函数关闭通道来告知从该通道接收值的goroutine停止等待。当通道被关闭时，往该通道发送值会引发panic，从该通道里接收的值一直都是类型零值。那如何判断一个通道是否被关闭了呢？
 
+```GO
+func main() {
+  // channel 练习
+	ch1 := make(chan int)
+	ch2 := make(chan int)
 
+	// 开启goroutine将0~100数据发送到ch1中
+	go func() {
+		for i := 0; i <= 100; i++ {
+			ch1 <- i
+		}
+		close(ch1)
+	}()
+	// 开启goroutine从ch1中接收值 并将该值的平方发送到ch2中
+	go func() {
+		for {
+			i, ok := <-ch1 // 如果通道关闭再取值ok=false
+			if !ok {
+				break
+			}
+			ch2 <- i * i
+		}
+		close(ch2)
+	}()
+	// 在主goroutine中从ch2接收值并打印
+	for i := range ch2 { // 通道关闭后会退出 for range循环
+		fmt.Println(i)
+	}
+}
+```
 
+从上面的例子中我们看到有两种方式在接收值的时候判断通道是否关闭，一般情况使用的是for range的方式。
 
+**单向通道**
 
+有的时候 我们会江通道作为参数在多个任务函数间传递，很多时候我们在不同的任务函数中使用通道都会对其进行限制，比如限制通道在函数中只能发送或者只能接收。
 
+Go语言中提供了单向通道来处理这种情况。例如，我们把上面的例子改造如下：
 
+```go
+func counter(out chan<- int) { // out是只能发送的channel
+	for i := 0; i < 10; i++ {
+		out <- i
+	}
+	close(out)
+}
 
+func squarer(out chan<- int, in <-chan int) { // out只能发送 in只能接收
+	for i := range in {
+		out <- i * i
+	}
+	close(out)
+}
+
+func printer(in <-chan int) {
+	for i := range in {
+		fmt.Println(i)
+	}
+}
+
+func main() {
+	ch1 := make(chan int)
+	ch2 := make(chan int)
+	go counter(ch1)
+	go squarer(ch2, ch1)
+	printer(ch2)
+}
+```
+
+其中:
+
+```GO
+1.chan<- int 是一个只能发送的通道，可以发送但不能接收
+2.<-chan int 是一个只能接收的通道，只能接收但不能发送
+```
+
+在函数传参及任何赋值操作中将双向通道转换为单向通道是可以的，但反过来是不可以的。
+
+**通道总结**
+
+channel常见异常总结如下：
+
+![img](https://tva1.sinaimg.cn/large/e6c9d24ely1gznegf0a37j21bs0ii79d.jpg)
+
+*注意：关闭已经关闭的channel也会引发panic*
 
 #### 5、goroutine池
 
+**worker pool（goroutine池）**
 
+- 本质上是生产者消费者模型
+- 可以有效控制goroutine数量，防止暴涨
 
+需求：
 
+- 计算一个数字各位数之和，例如数字123，结果为1+2+3=6
+- 随机生成数字进行计算		
 
 #### 6、定时器
 
+- Timer：时间到了，执行只执行一次
 
+- Ticker：时间到了，多次执行
 
-
+```go
+func main() {
+    // 1.获取ticker对象
+    ticker := time.NewTicker(1 * time.Second)
+    i := 0
+    // 子协程
+    go func() {
+        for {
+            //<-ticker.C
+            i++
+            fmt.Println(<-ticker.C)
+            if i == 5 {
+                //停止
+                ticker.Stop()
+            }
+        }
+    }()
+    for {
+    }
+}
+```
 
 #### 7、select
+
+**select多路复用**
+
+在某些场景下我们需要同时从多个通道接收数据。通道在接收数据时，如果没有数据可以接受将会发生阻塞。你也许会写出如下代码使用遍历的方式来实现：
+
+```go
+for {
+  // 尝试从ch1接收值
+  data, ok := <-ch1
+  // 尝试从ch2接收值
+  data, ok := <-ch2
+  ...
+}
+```
+
+这种方式虽然可以实现从多个通道接收值的需求，但是运行性鞥会差很多。为了应对这种场景，Go内置了select关键字，可以同时响应多个通道的操作。
+
+select的使用类似于switch语句，它有一系列case分支和一个默认的分支。每个case会对应一个通道的通信（接收或发送）。select会一直等待，知道某个case的通信操作完成时，就会执行case分支对应的语句。具体格式如下：
+
+```GO
+select {
+  case <-chan1:
+  // 如果chan1成功读取到数据，则进行当前case处理语句
+  case chan2 <- 1:
+  // 如果成功向chan2写入数据，则进行当前case处理语句
+  default:
+  // 如果上面都没有成功，则进行default处理流程
+}
+```
+
+select可以同时监听一个或多个channel，直到其中一个channel ready。
+
+```GO
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+// channel select
+
+func test1(ch chan string) {
+	time.Sleep(time.Second * 5)
+	ch <- "test1 func"
+}
+
+func test2(ch chan string) {
+	time.Sleep(time.Second * 2)
+	ch <- "test2 func"
+}
+
+func main() {
+	// 两个管道
+	out1 := make(chan string)
+	out2 := make(chan string)
+	// 跑2个子协程 写数据
+	go test1(out1)
+	go test2(out2)
+	// 用select监控
+	select {
+	case str1 := <-out1:
+		fmt.Println("str1:", str1)
+	case str2 := <-out2:
+		fmt.Println("str2:", str2)
+	}
+}
+```
+
+如果多个channel同时ready，则随机选择一个执行
+
+```GO
+func main() {
+  int_chan := make(chan int, 1)
+	str_chan := make(chan string, 1)
+	go func() {
+		int_chan <- 1
+	}()
+	go func() {
+		str_chan <- "test"
+	}()
+	select {
+	case value := <-int_chan:
+		fmt.Println("int value=", value)
+	case value := <-str_chan:
+		fmt.Println("string value=", value)
+	}
+	fmt.Println("main结束~")
+}
+```
+
+可以用于判断管道是否存满
+
+```GO
+
+```
+
+
+
+
+
+
 
 
 
