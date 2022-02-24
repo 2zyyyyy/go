@@ -7873,7 +7873,345 @@ func main() {
 可以用于判断管道是否存满
 
 ```GO
+func write(ch chan string) {
+	for {
+		select {
+		case ch <- "hello":
+			fmt.Println("write hello~")
+		default:
+			fmt.Println("channel full!")
+		}
+		time.Sleep(time.Millisecond * 500)
+	}
+}
 
+func main() {
+  // 判断通道是否存满
+	ch := make(chan string, 10)
+	// 子协程写数据
+	go write(ch)
+	// 取数据
+	for s := range ch {
+		fmt.Println("res=", s)
+		time.Sleep(time.Second)
+	}
+}
+```
+
+#### 8、并发安全和锁
+
+有时候在Go代码中可能会存在多个goroutine同事操作一个资源（临界区），这种情况会发生竞态问题（数据竞态）。类比现实生活中的例子有十字路口被各个方向的汽车竞争；还有火车上的卫生间被车厢里的人竞争。
+
+举个例子：
+
+```GO
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+// 竞态问题
+
+var x int64
+var wg sync.WaitGroup
+
+func add() {
+	for i := 0; i < 1000; i++ {
+		x+=1
+	}
+	wg.Done()
+}
+
+func main() {
+	wg.Add(2)
+	go add()
+	go add()
+	wg.Wait()
+	fmt.Println(x)
+}
+
+// go run main.go
+1646
+```
+
+以上代码中我们开启了两个goroutine去累加变量x的值，这两个goroutine在访问和修改x变量的时候就会存在数据竞态，导致最后的结果与预期不符。
+
+**互斥锁**
+
+互斥锁是一种常见的控制共享资源的方法，它能够保证同时只有一个goroutine可以访问共享资源。Go语言中使用sync包的Mutex类型来实现互斥锁。使用互斥锁来修复上面代码的问题：
+
+```GO
+func add() {
+	for i := 0; i < 1000; i++ {
+		// 加锁
+		lock.Lock()
+		x += 1
+		// 解锁
+		lock.Unlock()
+	}
+	wg.Done()
+}
+
+// go run main.go
+2000
+```
+
+使用互斥锁能搞保证同一时间有且只有一个goroutine进入临界区，其他的goroutine则在等待锁；当互斥锁释放后，等待的goroutine才可以获取锁进入临界区，多个goroutine同事等待一个锁时，唤醒的策略是随机的。
+
+**读写互斥锁**
+
+互斥锁是完全互斥的，但是有很多实际的场景下是读多写少的，当我们并发的去读取一个资源不涉及资源修改的时候是没有必要加锁的，这种场景下使用读写锁是更好的一种选择。读写锁在Go语言中使用sync.RWMutex类型。
+
+读写锁分两种：读锁和写锁。当一个goroutine获取读锁之后，其他的goroutine如果是获取的读锁会继续获得锁，如果是获取写锁就会等待；当一个goroutine获取写锁之后，其他的goroutine无论是获取读锁还是写锁都会等待。
+
+读写锁示例：
+
+```GO
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+// 读写锁
+
+var (
+	n  int64
+	wg sync.WaitGroup
+	// lock   sync.Mutex
+	rwLock sync.RWMutex
+)
+
+func write() {
+	rwLock.Lock() // 加写锁
+	n += 1
+	time.Sleep(time.Millisecond * 2) // 假设写耗时2毫秒
+	rwLock.Unlock()                  // 解写锁
+	wg.Done()
+}
+
+func read() {
+	rwLock.RLock()               // 加读锁
+	time.Sleep(time.Millisecond) // 假设读耗时1毫秒
+	rwLock.RUnlock()             // 解读锁
+	wg.Done()
+}
+
+func main() {
+	start := time.Now()
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		go write()
+	}
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		go read()
+	}
+	wg.Wait()
+	end := time.Now()
+	fmt.Println(end.Sub(start))
+}
+
+// go run main.go
+2.273914864s
+```
+
+需要注意的是读写锁非常适合读多写少的场景，如果读和写的操作差别不大，读写锁的又是就发挥不出来。
+
+#### 9、sync
+
+**sync.WaitGroup**
+
+当代码中生硬的使用time.Sleep肯定是不合适的，Go语言中可以使用sync.WaitGroup来实现并发任务的同步。sync.WaitGroup有以下几个方法：
+
+| 方法名         | 功能                |
+| -------------- | ------------------- |
+| Add(delta int) | 计数器 + delta      |
+| Done()         | 计数器 -  1         |
+| Wait()         | 阻塞直到计数器变为0 |
+
+sync.WaitGroup内部维护着一个计数器，计数器的值可以增加和减少。例如当我们启动了N个并发任务时，就将计数器值加N。每个任务完成时通过调用Done()方法将计数器-1.通过调用Wait()来等待并发任务执行完，当计数器值为0时，表示所有并发任务已经完成。
+
+我们利用sync.WaitGroup将上面的代码优化一下：
+
+```go
+var wg sync.WaitGroup
+
+func hello() {
+  defer wg.Done()
+  fmt.Println("Hello Goroutine~~~")
+}
+
+func main() {
+  wg.Add(1)
+  go hello()
+  fmt.Println("main goroutine done!")
+  wg.Wait()
+}
+```
+
+*注意：sync.WaitGroup是一个结构体，传递的时候要传递指针。*
+
+**sync.Once**
+
+前言：这是一个进阶知识点
+
+在编程的很多场景下我们需要确保某些操作在高并发的场景下只执行一次，例如只加载一次配置文件、只关闭一次通道等。
+
+Go语言中的sync包中提供了一个针对只执行一次场景的解决方案：sync.Once
+
+sync.Once只有一个Do方法，其签名如下：
+
+```GO
+func (o *Once) Do(f func()) {}
+```
+
+*注意：如果要执行的函数f需要传递参数就需要搭配闭包来使用。*
+
+**加载配置文件示例**
+
+延迟一个开销很大的初始化操作到真正用到它的时候在执行是一个很好的实践。因为预先初始化一个变量（比如在init函数中完成初始化）会增加程序的启动耗时，而且有可能实际执行过程中这个变量没有用上，那么这个初始化操作就不是必须要做的。我们来看一个例子：
+
+```GO
+var icons map[string]image.Image
+
+func loadUcons() {
+  icons = map[string]image.Image{
+    "left": loadIcon("left.png"),
+    "up": loadIcon("up.png"),
+    "right": loadIcon("right.png"),
+    "down": loadIcon("down.png"),
+  }
+}
+
+// Icon 被多个goroutine调用时不是并发安全的
+func Icon(name string) image.Image {
+  if icons == nil {
+    loadIcons()
+  }
+  return icons[name]
+}
+```
+
+多个goroutine并发调用Icon函数时不是并发安全的，现代的编译器和CPU可能会在保证每个goroutine都满足串行一致的基础上自由地重新排访问内存的顺序。loadIcons函数可能会被重排为以下结果：
+
+```GO
+func loadIcons() {
+    icons = make(map[string]image.Image)
+    icons["left"] = loadIcon("left.png")
+    icons["up"] = loadIcon("up.png")
+    icons["right"] = loadIcon("right.png")
+    icons["down"] = loadIcon("down.png")
+} 
+```
+
+这种情况下就会出现即使判断了icons不是nil也不意味着变量初始化完成了。考虑到这种情况，我们能想到的办法就是添加互斥锁，保证初始化icons的时候不会被其他的goroutine操作，但是这样做又会引发性能问题。
+
+使用sync.Once()改造的示例代码如下：
+
+```go
+var icons map[string]image.Image
+
+var loadIconsOnce sync.Once
+
+func loadIcons() {
+    icons = map[string]image.Image{
+        "left":  loadIcon("left.png"),
+        "up":    loadIcon("up.png"),
+        "right": loadIcon("right.png"),
+        "down":  loadIcon("down.png"),
+    }
+}
+
+// Icon 是并发安全的
+func Icon(name string) image.Image {
+    loadIconsOnce.Do(loadIcons)
+    return icons[name]
+}
+```
+
+sync.Once()其实内部包含一个互斥锁和一个布尔值，互斥锁保证布尔值的数据和安全，而布尔值用来记录初始化是否完成。这样设计就能保证初始化的时候是并发安全的并且初始化操作也不会被执行多次。
+
+**sync.Map**
+
+Go语言中内置的map并不是并发安全的。请看如下示例：
+
+```GO
+package main
+
+import (
+	"fmt"
+	"strconv"
+	"sync"
+)
+
+// sync.Map
+
+var m = make(map[string]int)
+
+func get(key string) int {
+	return m[key]
+}
+
+func set(key string, value int) {
+	m[key] = value
+}
+
+func main() {
+	wg := sync.WaitGroup{}
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func(n int) {
+			// strconv.Itoa函数的参数是一个整型数字，它可以将数字转换成对应的字符串类型的数字
+			key := strconv.Itoa(n)
+			set(key, n)
+			fmt.Printf("key:%s, value:%d\n", key, get(key))
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+}
+
+// go run main.go
+fatal error: concurrent map writes
+key:14, value:14
+
+goroutine 18 [running]:
+runtime.throw(0x10d06c2, 0x15)
+        /usr/local/go/src/runtime/panic.go:1116 +0x72 fp=0xc0001066c8 sp=0xc000106698 pc=0x1031e32
+runtime.mapassign_faststr(0x10b7e20, 0xc000064180, 0x10d56eb, 0x2, 0x0)
+        /usr/local/go/src/runtime/map_faststr.go:211 +0x3f1 fp=0xc000106730 sp=0xc0001066c8 pc=0x1011ed1
+main.set(...)
+……
+```
+
+以上代码开启少量几个goroutine的时候可以正常运行，但是并发多了之后执行就会报以上错误。
+
+在这种场景下就需要为map加锁来保证并发安全性了，Go语言的sync包中提供了一个开箱即用的并发安全版map：sync.map。开箱即用表示不用像内置的map一样使用make函数初始化就能直接使用。同事sync.Map内置了诸如Store、Load、LoadOrStore、Delete、Range等操作方法。
+
+```go
+var m = sync.Map{}
+
+func main() {
+	wg := sync.WaitGroup{}
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func(n int) {
+			// strconv.Itoa函数的参数是一个整型数字，它可以将数字转换成对应的字符串类型的数字
+			key := strconv.Itoa(n)
+			// set(key, n)
+			m.Store(key, n)
+			value, _ := m.Load(key)
+			fmt.Printf("key:%s, value:%d\n", key, value)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+}
 ```
 
 
@@ -7881,18 +8219,6 @@ func main() {
 
 
 
-
-
-
-
-
-#### 8、并发安全和锁
-
-
-
-
-
-#### 9、sync
 
 
 
