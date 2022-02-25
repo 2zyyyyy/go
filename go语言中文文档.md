@@ -8204,14 +8204,119 @@ func main() {
 			// strconv.Itoa函数的参数是一个整型数字，它可以将数字转换成对应的字符串类型的数字
 			key := strconv.Itoa(n)
 			// set(key, n)
-			m.Store(key, n)
-			value, _ := m.Load(key)
+			m.Store(key, n)          // 写入
+			value, _ := m.Load(key)  // 读取
 			fmt.Printf("key:%s, value:%d\n", key, value)
 			wg.Done()
 		}(i)
 	}
 	wg.Wait()
 }
+```
+
+#### 10、原子操作（atomic包）
+
+**原子操作**
+
+代码中的加锁操作因为涉及内核态的上下文切换会比较耗时、代价比较高。针对基本数据类型我们还可以使用原子操作来保证并发安全，因为原子操作是Go语言提供的方法他在用户态就可以完成，因此性能比加锁操作更好。Go语言中原子操作由内置的标准库sync/atomic提供。
+
+**atomic包**
+
+| 方法                                                         | 解释           |
+| :----------------------------------------------------------- | :------------- |
+| func LoadInt32(addr *int32) (val int32)func LoadInt64(addr `*int64`) (val int64)<br>func LoadUint32(addr`*uint32) (val uint32)<br>func LoadUint64(addr*uint64`) (val uint64)<br>func LoadUintptr(addr`*uintptr) (val uintptr)<br>func LoadPointer(addr*unsafe.Pointer`) (val unsafe.Pointer) | 读取操作       |
+| func StoreInt32(addr `*int32`, val int32) func StoreInt64(addr `*int64`, val int64) func StoreUint32(addr `*uint32`, val uint32) func StoreUint64(addr `*uint64`, val uint64) func StoreUintptr(addr `*uintptr`, val uintptr) func StorePointer(addr `*unsafe.Pointer`, val unsafe.Pointer) | 写入操作       |
+| func AddInt32(addr `*int32`, delta int32) (new int32) func AddInt64(addr `*int64`, delta int64) (new int64) func AddUint32(addr `*uint32`, delta uint32) (new uint32) func AddUint64(addr `*uint64`, delta uint64) (new uint64) func AddUintptr(addr `*uintptr`, delta uintptr) (new uintptr) | 修改操作       |
+| func SwapInt32(addr `*int32`, new int32) (old int32) func SwapInt64(addr `*int64`, new int64) (old int64) func SwapUint32(addr `*uint32`, new uint32) (old uint32) func SwapUint64(addr `*uint64`, new uint64) (old uint64) func SwapUintptr(addr `*uintptr`, new uintptr) (old uintptr) func SwapPointer(addr `*unsafe.Pointer`, new unsafe.Pointer) (old unsafe.Pointer) | 交换操作       |
+| func CompareAndSwapInt32(addr `*int32`, old, new int32) (swapped bool) func CompareAndSwapInt64(addr `*int64`, old, new int64) (swapped bool) func CompareAndSwapUint32(addr `*uint32`, old, new uint32) (swapped bool) func CompareAndSwapUint64(addr `*uint64`, old, new uint64) (swapped bool) func CompareAndSwapUintptr(addr `*uintptr`, old, new uintptr) (swapped bool) func CompareAndSwapPointer(addr `*unsafe.Pointer`, old, new unsafe.Pointer) (swapped bool) | 比较并交换操作 |
+
+**示例**
+
+我们填写一个示例来比较下互斥锁和原子操作的性能。
+
+```GO
+package main
+
+import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+	"time"
+)
+
+// 比较互斥锁和原子操作性能
+
+var (
+	x    int64
+	lock sync.Mutex
+	wg   sync.WaitGroup
+)
+
+// 普通加锁版本
+func add() {
+	x++
+	wg.Done()
+}
+
+// 加强版互斥锁
+func mutexAdd() {
+	lock.Lock()
+	x++
+	lock.Unlock()
+	wg.Done()
+}
+
+// 终极版原子操作
+func atomicAdd() {
+	atomic.AddInt64(&x, 1)
+	wg.Done()
+}
+
+func main() {
+	start := time.Now()
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		//  普通 不是并发安全
+		go add()
+		// 加强 是并发安全 但性能开销大
+		// go mutexAdd()
+		// 终极 并发安全 性能优于加锁版
+		// go atomicAdd()
+	}
+	wg.Wait()
+	end := time.Now()
+	fmt.Println(x)
+	fmt.Println(end.Sub(start))
+}
+```
+
+|      类型      | 时间（毫秒） |
+| :------------: | :----------: |
+|   普通函数版   |  3.592815ms  |
+|   加强加锁版   |  3.22896ms   |
+| 终极原子操作版 |  3.090508ms  |
+
+atomic包提供了底层的原子级内存操作，对于同步算法的实现很有用。这些函数必须谨慎地保证正确使用。除了某些特殊的底层应用，使用通道或者sync包的函数/类型实现同步更好。
+
+#### 11、GMP原理与调度
+
+先略过，后期补充
+
+####12、爬虫案例
+
+**思路**
+
+1. 明确目标
+2. 爬取数据
+3. 筛选数据
+4. 处理数据
+
+**并发爬取图片**
+
+1. [https://www.bizhizu.cn/shouji/tag-%E5%8F%AF%E7%88%B1/1.html](https://www.bizhizu.cn/shouji/tag-可爱/1.html)
+
+```go
+
 ```
 
 
@@ -8221,20 +8326,6 @@ func main() {
 
 
 
-
-
-
-#### 10、原子操作（atomic包）
-
-
-
-#### 11、GMP原理与调度
-
-
-
-
-
-####12、爬虫案例
 
 ### 数据操作
 

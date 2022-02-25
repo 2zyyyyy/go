@@ -27,8 +27,8 @@ func main() {
 			// strconv.Itoa函数的参数是一个整型数字，它可以将数字转换成对应的字符串类型的数字
 			key := strconv.Itoa(n)
 			// set(key, n)
-			m.Store(key, n)
-			value, _ := m.Load(key)
+			m.Store(key, n)         // 写入
+			value, _ := m.Load(key) // 读取
 			fmt.Printf("key:%s, value:%d\n", key, value)
 			wg.Done()
 		}(i)

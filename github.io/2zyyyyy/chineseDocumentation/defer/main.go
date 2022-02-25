@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"time"
+)
 
 // defer 延迟调用
 
@@ -15,6 +19,8 @@ func main() {
 	// 	defer Close(v)
 	// }
 	test(0)
+	timePrefix := strconv.Itoa(int(time.Now().UnixNano()))
+	fmt.Println(timePrefix)
 }
 
 func test(x int) {
