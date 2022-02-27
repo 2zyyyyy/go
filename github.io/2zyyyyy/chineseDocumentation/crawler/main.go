@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -98,8 +99,34 @@ func CheckOK() {
 // 爬图片链接存放到通道
 // url传的是整页的链接
 func getImgUrls(url string) {
-	urls := get
+	urls := getImgs(url)
+	// 遍历切片里所有链接，存入数据管道
+	for _, url := range urls {
+		chanImageUrls <- url
+	}
+	// 标识当前协程完成
+    // 每完成一个任务，写一条数据
+    // 用于监控协程知道已经完成了几个任务
+	chanTask <- url
+	wg.Done()
 }
 
 // 获取当前页面图片链接
-func getImgs()
+func getImgs(url string) (urls []string) {
+	pageStr := GetPageStr(url)
+	re := regexp.MustCompile(reImage)
+	results := re.FindAllStringSubmatch(pageStr, -1)
+	fmt.Printf("共找到%d条结果/n", len(results))
+	for _, result := range results {
+		url := result[0]
+		urls = append(urls, url)
+	}
+	return
+}
+
+// 抽取根据url获取内容
+func GetPageStr(url string) (page string)  {
+	res, err := http.Get(url)
+	HandError(err, "http.Get url")
+	defer res.
+}
