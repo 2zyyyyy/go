@@ -8311,27 +8311,418 @@ atomic包提供了底层的原子级内存操作，对于同步算法的实现�
 3. 筛选数据
 4. 处理数据
 
-**并发爬取图片**
+### 数据操作
 
-1. [https://www.bizhizu.cn/shouji/tag-%E5%8F%AF%E7%88%B1/1.html](https://www.bizhizu.cn/shouji/tag-可爱/1.html)
+#### 1、Go操作MySQL
+
+新建test数据库，person、place表
+
+```mysql
+CREATE TABLE `person` (
+    `user_id` int(11) NOT NULL AUTO_INCREMENT,
+    `username` varchar(260) DEFAULT NULL,
+    `sex` varchar(260) DEFAULT NULL,
+    `email` varchar(260) DEFAULT NULL,
+    PRIMARY KEY (`user_id`)
+  ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+
+CREATE TABLE place (
+    country varchar(200),
+    city varchar(200),
+    telcode int
+)ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+```
+
+![image-20220301212358265](https://tva1.sinaimg.cn/large/e6c9d24ely1gzup87td3vj20el07wq3o.jpg)
+
+**mysql使用**
+
+使用第三方开元的mysql库：github.com/go-sql-driver/mysql （mysql驱动）
+github.com/jmoiron/sqlx （基于mysql驱动的封装）
+
+命令行输入：
+
+```GO
+    go get github.com/go-sql-driver/mysql 
+    go get github.com/jmoiron/sqlx     
+```
+
+连接mysql：
+
+```GO
+database, err: = sqlx.Open("mysql","root:XXXX@tcp(127.0.0.1:3306)/test")
+//database, err := sqlx.Open("数据库类型", "用户名:密码@tcp(地址:端口)/数据库名")  
+```
+
+**insert操作**
 
 ```go
+package main
 
+import (
+	"fmt"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+type Person struct {
+	UserId   int    `db:"user_id"`
+	Username string `db:"username"`
+	Sex      string `db:"sex"`
+	Email    string `db:"email"`
+}
+
+type Place struct {
+	Country string `db:"country"`
+	City    string `db:"city"`
+	TelCode int    `db:"telcode"`
+}
+
+var Db *sqlx.DB
+
+func init() {
+	database, err := sqlx.Open("mysql", "root:zhangyun..@tcp(127.0.0.1:3306)/test")
+	if err != nil {
+		fmt.Println("open mysql failed,", err)
+		return
+	}
+	Db = database
+}
+
+func main() {
+	r, err := Db.Exec("insert into person(username, sex, email)values(?, ?, ?)", "stu002", "man", "stu02@qq.com")
+	if err != nil {
+		fmt.Println("exec failed, ", err)
+		return
+	}
+	id, err := r.LastInsertId()
+	if err != nil {
+		fmt.Println("exec failed, ", err)
+		return
+	}
+	Db.Close()
+	fmt.Println("insert succ:", id)
+}
+
+// go run main.go
+insert succ: 2
+```
+
+**select操作**
+
+```GO
+package main
+
+import (
+	"fmt"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+type Person struct {
+	UserId   int    `db:"user_id"`
+	Username string `db:"username"`
+	Sex      string `db:"sex"`
+	Email    string `db:"email"`
+}
+
+type Place struct {
+	Country string `db:"country"`
+	City    string `db:"city"`
+	TelCode int    `db:"telcode"`
+}
+
+var Db *sqlx.DB
+
+func init() {
+	database, err := sqlx.Open("mysql", "root:zhangyun..@tcp(127.0.0.1:3306)/test")
+	if err != nil {
+		fmt.Println("open mysql failed,", err)
+		return
+	}
+	Db = database
+}
+
+func main() {
+	var person []Person
+	defer Db.Close()
+	err := Db.Select(&person, "select user_id, username, sex, email from person where user_id=?", 2)
+	if err != nil {
+		fmt.Println("exec failed, ", err)
+		return
+	}
+	fmt.Println("select success:", person)
+}
+
+// go run main.go
+select success: [{2 stu001 man stu01@qq.com}]
+```
+
+**update**
+
+```GO
+package main
+
+import (
+	"fmt"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+type Person struct {
+	UserId   int    `db:"user_id"`
+	Username string `db:"username"`
+	Sex      string `db:"sex"`
+	Email    string `db:"email"`
+}
+
+type Place struct {
+	Country string `db:"country"`
+	City    string `db:"city"`
+	TelCode int    `db:"telcode"`
+}
+
+var Db *sqlx.DB
+
+func init() {
+	database, err := sqlx.Open("mysql", "root:zhangyun..@tcp(127.0.0.1:3306)/test")
+	if err != nil {
+		fmt.Println("open mysql failed,", err)
+		return
+	}
+	Db = database
+}
+
+func main() {
+	res, err := Db.Exec("update person set username = ? where user_id = ?", "stu_03", 3)
+	defer Db.Close()
+	if err != nil {
+		fmt.Println("exec failed, ", err)
+		return
+	}
+	row, err := res.RowsAffected()
+	if err != nil {
+		fmt.Println("row failed, ", err)
+		return
+	}
+	fmt.Println("update success:", row)
+}
+
+// go run main.go
+update success: 1
+```
+
+**delete**
+
+```GO
+package main
+
+import (
+	"fmt"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+type Person struct {
+	UserId   int    `db:"user_id"`
+	Username string `db:"username"`
+	Sex      string `db:"sex"`
+	Email    string `db:"email"`
+}
+
+type Place struct {
+	Country string `db:"country"`
+	City    string `db:"city"`
+	TelCode int    `db:"telcode"`
+}
+
+var Db *sqlx.DB
+
+func init() {
+	database, err := sqlx.Open("mysql", "root:zhangyun..@tcp(127.0.0.1:3306)/test")
+	if err != nil {
+		fmt.Println("open mysql failed,", err)
+		return
+	}
+	Db = database
+}
+
+func main() {
+	res, err := Db.Exec("delete from person where user_id = ?", 2)
+	defer Db.Close()
+	if err != nil {
+		fmt.Println("exec failed, ", err)
+		return
+	}
+	row, err := res.RowsAffected()
+	if err != nil {
+		fmt.Println("exec failed, ", err)
+		return
+	}
+	Db.Close()
+	fmt.Println("delete success:", row)
+}
+
+// go run main.go
+delete success: 1
+```
+
+**MySQL事务**
+
+mysql事务特性：
+
+1. 原子性
+2. 一致性
+3. 隔离性
+4. 持久性
+
+Golang MySQL事务应用：
+
+```GO
+1.import (""github.com/jmoiron/sqlx)
+2.Db.Begin()    开始事务
+3.Db.Commit()   提交事务
+3.Db.Rollback() 回滚事务
+```
+
+```GO
+package main
+
+import (
+	"fmt"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// MySQL 事务
+type Person struct {
+	UserId   int    `db:"user_id"`
+	Username string `db:"username"`
+	Sex      string `db:"sex"`
+	Email    string `db:"email"`
+}
+
+type Place struct {
+	Country string `db:"country"`
+	City    string `db:"city"`
+	TelCode int    `db:"telcode"`
+}
+
+var Db *sqlx.DB
+
+func init() {
+	database, err := sqlx.Open("mysql", "root:zhangyun..@tcp(127.0.0.1:3306)/test")
+	if err != nil {
+		fmt.Println("open mysql failed,", err)
+		return
+	}
+	Db = database
+}
+
+func insert(username, sex, email string) (sql string) {
+	sql = fmt.Sprintf("insert into person(username, sex, email)values(%s, %s, %s)", username, sex, email)
+	fmt.Println("sql:", sql)
+	return sql
+}
+
+func main() {
+	conn, err := Db.Begin()
+	defer Db.Close()
+	if err != nil {
+		fmt.Println("begin failed, err", err)
+		return
+	}
+	r, err := conn.Exec(insert("'stu_004'", "'man'", "'stu_004@qq.com'"))
+	if err != nil {
+		fmt.Println("exec failed, err:", err)
+		_ = conn.Rollback()
+		return
+	}
+	id, err := r.LastInsertId()
+	if err != nil {
+		fmt.Println("exec failed, err:", err)
+		_ = conn.Rollback()
+		return
+	}
+	fmt.Println("insert success", id)
+
+	r, err = conn.Exec(insert("'stu_005'", "'man'", "'tu_005@qq.com'"))
+	if err != nil {
+		fmt.Println("exec failed, err:", err)
+		_ = conn.Rollback()
+		return
+	}
+	id, err = r.LastInsertId()
+	if err != nil {
+		fmt.Println("exec failed, err:", err)
+		_ = conn.Rollback()
+		return
+	}
+	fmt.Println("insert success", id)
+
+	// 提交事务
+	err = conn.Commit()
+	if err != nil {
+		fmt.Println("commit failed, err", err)
+		return
+	}
+}
+
+// go run main.go
+sql: insert into person(username, sex, email)values('stu_004', 'man', 'stu_004@qq.com')
+insert success 4
+sql: insert into person(username, sex, email)values('stu_005', 'man', 'tu_005@qq.com')
+insert success 5
+```
+
+![image-20220302165612786](https://tva1.sinaimg.cn/large/e6c9d24ely1gzvn3u44v9j20ae03m0sx.jpg)
+
+#### 2、Go操作Redis
+
+**Redis介绍**
+
+Redis是完全开源免费的，遵守BSD协议，是一个高性能的key-value数据库。
+
+Redis与其他kv缓存茶农相比有以下三个特点：
+
+1. Redis支持数据的持久化，可以将内存中的数据保存在磁盘中，重启的时候可以再次加载进行使用。
+2. Redis不仅仅支持简单的kv类型的数据，同事还提供string、list（链表）、set（集合）、hash表等数据结构的存储。
+3. Redis支持数据的备份，即master-slave模式的数据备份。
+
+**Redis优势**
+
+- 性能极高
+  - Redis能读的速度是110000次/s，写的速度是81000/s，单机能够达到15w QPS，通常适合做缓存。
+- 丰富的数据类型
+  - Redis支持二进制案例的strings、list、hashes、sets及ordered sets数据类型操作。
+- 原子
+  - Redis的所有操作都是原子性的，意思就是要么成功执行要么失败完全不执行。单个操作是原子性的。多个操作也支持事务，即原子性，通过MULII和EXEC指令包起来。
+- 丰富的特性
+  - Redis还支持publish/subscribe，通知，key过期等等特性。
+
+Redis与其他的k-v存储有何不同？
+
+1. Redis有着更为复杂的数据结构并且提供对他们的原子性操作，这是一个不同于其他数据库的进化路径。Redis的数据类型都是基于基本数据结构的同时对程序员透明，无需进行额外的抽象。
+2. Redis运行在内存中但是可以持久化到磁盘，所以在对不同数据集进行高速读写时需要权衡内存，因为数据量不能大于硬件内存。在内存数据库方面的另一个优点是，相比在磁盘上相同的复杂的数据结构，在内存中操作起来非常简单，这样Redis可以做很多内部复杂性很强的事情。同时，在磁盘格式方面他们是紧凑的以追加的方式产生的，因为他们并不需要进行随机访问。
+
+**Redis使用**
+
+使用第三方开源的Redis库：github.com/garyburd/redigo/redis
+
+命令行：
+
+```go
+go get github.com/garyburd/redigo/redis
 ```
 
 
 
 
-
-
-
-
-
-### 数据操作
-
-
-
-### 常用标准库
 
 
 
