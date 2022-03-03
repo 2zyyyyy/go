@@ -8720,7 +8720,116 @@ Redis与其他的k-v存储有何不同？
 go get github.com/garyburd/redigo/redis
 ```
 
+**连接Redis**
 
+```GO
+package main
+
+import (
+	"fmt"
+	"github.com/garyburd/redigo/redis"
+)
+
+// Golang 连接 Redis
+func main()  {
+	client, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		fmt.Println("conn redis failed, err", err)
+		return
+	}
+	fmt.Println("redis conn success!")
+
+	defer client.Close()
+}
+
+// go run main.go
+redis conn success!
+```
+
+**String类型Set、Get操作**
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/garyburd/redigo/redis"
+)
+
+// Golang 连接 Redis
+func main()  {
+	client, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		fmt.Println("conn redis failed, err", err)
+		return
+	}
+	fmt.Println("redis conn success!")
+
+	defer client.Close()
+
+	_, err = client.Do("Set", "abc", 100)
+	if err != nil {
+		fmt.Println("client do failed, err:", err)
+		return
+	}
+
+	r, err := redis.Int(client.Do("Get", "abc"))
+	if err != nil {
+		fmt.Println("get abc failed, err:", err)
+		return
+	}
+	fmt.Println(r)
+}
+
+//  go run main.go
+redis conn succe
+100
+```
+
+**string批量操作**
+
+```GO
+package main
+
+import (
+	"fmt"
+	"github.com/garyburd/redigo/redis"
+)
+
+// Golang 连接 Redis
+func main() {
+	client, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		fmt.Println("conn redis failed, err", err)
+		return
+	}
+	fmt.Println("redis conn success!")
+
+	defer client.Close()
+
+	_, err = client.Do("MSet", "abc", 100, "efg", 200)
+	if err != nil {
+		fmt.Println("client do failed, err:", err)
+		return
+	}
+
+	r, err := redis.Ints(client.Do("MGet", "abc", "efg"))
+	if err != nil {
+		fmt.Println("get failed, err:", err)
+		return
+	}
+
+	// 遍历r 批量取
+	for k, v := range r {
+		fmt.Printf("k:%v, v:%v\n", k, v)
+	}
+}
+
+//  go run main.go
+redis conn success!
+k:0, v:100
+k:1, v:200
+```
 
 
 
