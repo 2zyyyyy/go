@@ -59,10 +59,10 @@ func redisExample() {
 func main() {
 	err := initRedis()
 	if err != nil {
-		fmt.Printf("redis connection failed, error:%v\n", err)
+		fmt.Printf("conn_pool connection failed, error:%v\n", err)
 		return
 	}
-	fmt.Println("redis connection successed!")
+	fmt.Println("conn_pool connection successed!")
 
 	redisExampleSimple()
 }

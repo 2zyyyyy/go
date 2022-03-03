@@ -8734,10 +8734,10 @@ import (
 func main()  {
 	client, err := redis.Dial("tcp", "localhost:6379")
 	if err != nil {
-		fmt.Println("conn redis failed, err", err)
+		fmt.Println("conn conn_pool failed, err", err)
 		return
 	}
-	fmt.Println("redis conn success!")
+	fmt.Println("conn_pool conn success!")
 
 	defer client.Close()
 }
@@ -8760,10 +8760,10 @@ import (
 func main()  {
 	client, err := redis.Dial("tcp", "localhost:6379")
 	if err != nil {
-		fmt.Println("conn redis failed, err", err)
+		fmt.Println("conn conn_pool failed, err", err)
 		return
 	}
-	fmt.Println("redis conn success!")
+	fmt.Println("conn_pool conn success!")
 
 	defer client.Close()
 
@@ -8800,10 +8800,10 @@ import (
 func main() {
 	client, err := redis.Dial("tcp", "localhost:6379")
 	if err != nil {
-		fmt.Println("conn redis failed, err", err)
+		fmt.Println("conn conn_pool failed, err", err)
 		return
 	}
-	fmt.Println("redis conn success!")
+	fmt.Println("conn_pool conn success!")
 
 	defer client.Close()
 
@@ -8831,17 +8831,235 @@ k:0, v:100
 k:1, v:200
 ```
 
+**设置过期时间**
 
+```GO
+import (
+    "fmt"
+    "github.com/garyburd/redigo/conn_pool"
+)
 
+func main() {
+    c, err := redis.Dial("tcp", "localhost:6379")
+    if err != nil {
+        fmt.Println("conn conn_pool failed,", err)
+        return
+    }
 
+    defer c.Close()
+    _, err = c.Do("expire", "abc", 10)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+}
+```
 
+**List队列操作**
 
+```GO
+func main() {
+  client, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		fmt.Println("conn conn_pool failed, err", err)
+		return
+	}
+	fmt.Println("conn_pool conn success!")
 
+	defer client.Close()
+  
+  // List 队列操作
+	_, err = client.Do("lpush", "book_list", "abc", "ceg", 300)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	r, err := redis.String(client.Do("lpop", "book_list"))
+	if err != nil {
+		fmt.Println("get abc failed,", err)
+		return
+	}
 
+	fmt.Println(r)
+}
+```
 
+**Hash表**
 
+```GO
+func main() {
+  client, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		fmt.Println("conn conn_pool failed, err", err)
+		return
+	}
+	fmt.Println("conn_pool conn success!")
 
+	defer client.Close()
+  
+  // hash表
+	_, err = client.Do("HSet", "books", "abc", 100)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
+	r, err := redis.Int(client.Do("HGet", "books", "abc"))
+	if err != nil {
+		fmt.Println("get abc failed,", err)
+		return
+	}
+	fmt.Println(r)
+}
+```
+
+**连接池**
+
+```GO
+package main
+
+import (
+	"fmt"
+	"github.com/garyburd/redigo/redis"
+)
+
+// Redis 连接池
+
+var pool *redis.Pool  // 创建Redis连接池
+
+func init() {
+	pool = &redis.Pool{
+		// 实例化一个连接池
+		MaxIdle: 16,  // 初始连接数量
+		MaxActive: 0, // redis的最大连接数量（0：不确定）
+		IdleTimeout: 300,  // 连接关闭时间300秒（300秒不使用自动关闭）
+		Dial: func() (redis.Conn, error) {
+			// 要连接的redis数据库
+			return redis.Dial("tcp", "localhost:6379")
+		},
+	}
+}
+
+func main() {
+	client := pool.Get()  // 从连接池，取一个连接
+	defer client.Close()  // 函数运行结束，将连接放回连接池
+
+	_, err := client.Do("Set", "wanli", 200)
+	if err != nil {
+		fmt.Println("redis do failed, err:", err)
+		return
+	}
+
+	r, err := redis.Int(client.Do("Get", "wanli"))
+	if err != nil {
+		fmt.Println("get wanli failed, err:", err)
+		return
+	}
+	fmt.Println(r)
+	_ = pool.Close() // 关闭连接池
+}
+
+//  go run main.go
+200
+```
+
+**3、Go操作ETCD**
+
+**ETCD介绍**
+
+ETCD是使用Go语言开发的一个开源的、高可用的分布式k-v存储系统，可以用于配置共享和服务的注册和发现。
+
+类似项目有zookeeper和consul。
+
+ETCD具有以下特点：
+
+1. 完全复制：集群中的每个节点都可以使用完整的存档
+2. 高可用性：ETCD可用于避免硬件的单点故障或网络问题
+3. 一致性：每次读取都会返回跨多主机的最新写入
+4. 简单：包括一个定义良好、面向用户的API（gRPC）
+5. 安全：实现了带有可选的客户端正数身份验证的自动化TLS
+6. 快速：每秒10000次写入的基准速度
+7. 可靠：使用Raft算法实现了强一致、高可用的服务存储目录
+
+**ETCD应用场景**
+
+**服务发现**
+
+服务发现要解决的也是分布式系统中最常见的问题之一，即在同一个分布式集群中的进程或服务，要如何才能找到对方并建立连接。本质上来说，服务发现就是想要了解集群中是否有进程在监听udp或tcp端口，并且通过名字就可以查找和连接。
+
+![img](https://tva1.sinaimg.cn/large/e6c9d24ely1gzwqkp3virj20w80isgmh.jpg)
+
+**配置中心**
+
+将一些配置信息放到ETCD上进行集中管理。
+
+这类场景的使用方式通常是这样：应用在启动的时候主动从etcd获取一次配置信息，同时，在etcd节点上注册一个watcher并等待，以后每次配置有更新的时候，etcd都会实时通知订阅者，以此达到获取最新配置信息的目的。
+
+**分布式锁**
+
+因为etcd使用Raft算法保持了数据的强一致性，某此操作存储到集群中的值必然是全局一致的，所以很容易实现分布式锁。锁服务有两种使用方式，一是保持独占，而是控制时序。
+
+- 保持独占
+
+  保持独占即所有获取锁的用户最终只有一个可以得到。etcd为此提供了一套实现分布式锁原子操作CAS（CompareAndSwap）的API。通过设置prevExist值，可以保证在多个节点同时去创建某个目录时，只有一个成功。而创建成功的用户就可以认为是获得了锁
+
+- 控制时序
+
+  即所有想要获得锁的用户都会被安排执行，但是获得锁的顺序也是全局唯一的，同时决定了执行顺序。etcd为此也提供了一套API（自动创建有序建），对一个目录建值时指定为POST动作，这样etcd会自动在目录下生成一个当前最大的值作为键，存储这个新的值（客户端编号）。同时还可以使用API按顺序列出所有当前目录下的键值。此时这些键的值就是客户端的时序，而这些键中存储的值是代表客户端的编号
+
+  ![img](https://tva1.sinaimg.cn/large/e6c9d24ely1gzwtzp4lomj216w0iyjt2.jpg)
+
+**为什么用ETCD而不是ZooKeeper**
+
+为什么不选择zookeeper？
+
+- 部署维护复杂，其使用的Paxos强一致性算法复杂难懂。官方只提供了Java和C两种语言的接口
+- 使用Java编写引入大量的依赖，维护麻烦
+- 最近几年发展缓慢，不如etcd和consul等后起之秀
+
+etcd优点
+
+- 简单。使用Go编写部署简单；支持HTTP/JSON API，使用简单；使用Raft算法保证强一致性让用户易于理解
+- etcd默认数据一更新就进行持久化
+- etcd支持SSL客户端安全认证
+
+最后，etcd作为一个年轻的项目，正在高速迭代和开发中，这既是一个优点，也是一个缺点。优点是它的未来具有无限的可能性，缺点是无法得到大项目长时间使用的检验。然而，目前 CoreOS、Kubernetes和CloudFoundry等知名项目均在生产环境中使用了etcd，所以总的来说，etcd值得你去尝试。
+
+**ETCD集群**
+
+etcd作为一个高可用键值存储系统，天生就是为集群化而设计的。由于Raft算法在做决策时需要多数节点的投票，所以etcd一般部署集群推荐奇数个节点，推荐的数量为3、5或者7个节点构成一个集群。
+
+**操作ETCD**
+
+这里使用官方的`etcd/clientv3`包来连接etcd并进行相关操作。
+
+**安装**
+
+```go
+go get go.etcd.io/etcd/clientv3
+```
+
+**Put和Get操作**
+
+put命令用来设置键值对数据，get命令用来根据key获取值。
+
+……
+
+#### 4、ZooKeeper
+
+**基本操作**
+
+安装
+
+```GO
+go get github.com/samuel/go-zookeeper/zk
+```
+
+demo:
+
+```GO
+
+```
 
 
 
