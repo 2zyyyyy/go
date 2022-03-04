@@ -9055,11 +9055,7 @@ put命令用来设置键值对数据，get命令用来根据key获取值。
 go get github.com/samuel/go-zookeeper/zk
 ```
 
-demo:
 
-```GO
-
-```
 
 
 
