@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/samuel/go-zookeeper/zk"
+	"io/ioutil"
+	"net"
 	"time"
 )
 
@@ -15,6 +17,7 @@ func checkError(err error) {
 func main() {
 	for i := 0; i < 100; i++ {
 		startClient()
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -22,6 +25,25 @@ func startClient() {
 	// service := "127.0.0.1:8899"
 	// 获取地址
 	serverHost, err := getServerHost()
+	if err != nil {
+		fmt.Printf("get server host fail: %s\n", err)
+		return
+	}
+	fmt.Println("connect host:" + serverHost)
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", serverHost)
+	checkError(err)
+	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	checkError(err)
+	defer conn.Close()
+
+	_,err = conn.Write([]byte("timestamp"))
+	checkError(err)
+
+	res, err := ioutil.ReadAll(conn)
+	checkError(err)
+	fmt.Println(string(res))
+
+	return
 }
 
 func getServerHost() (host string, err error) {
