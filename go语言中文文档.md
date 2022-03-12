@@ -9122,9 +9122,33 @@ go get github.com/samuel/go-zookeeper/zk
 
 - producer：生产者，消息的产生者，是消息的入口。
 - kafka cluster：kafka集群，一台或多台服务器组成
-  - broker：
+  - broker：broker 试制部署了 kafka 实例的服务器节点。每个服务器上有一个或多个 kafka 的实例，我们暂且认为每个 broker 对应一台服务器。每个 kafka 集群内的 broker 都有一个不重复的编号，如图中的 broker-0、broker-1等
+  - topic：消息的主题，可以理解为消息的分类，kafka 的数据就保存在 topic 中。在每个 broker 上可以创建多个 topic。实际应用中通常是一个业务线建一个 topic
+  - partition：topic 的分区，每个 topic 可以有多个分区，分区的作用是做负载，提高 kafka 的屯度量。同一个 topic在不同的分区的数据是不重复的，partition 的表现形式就是一个又一个的文件夹
+  - replication：每一个分区都有多个副本，副本的作用就是做备胎。当主分区（leader）故障的时候会选择一个备胎（follower）上位，成为 leader。在 kafka 中默认副本的最大数量是 10 个，且副本的数量不能大于 broker 的数量，follower 和 leader 绝对是在不同的机器，同一机器对同一个分区也只可能存放一个副本（包括自己）
+  - consumer：消费者，即消息的消费方，是消息的出口
+    - consumer group：我们可以将多个消费组组成一个消费者组，在 kafka 的设计中同一个分区的数据只能被消费者组中的某一个消费者消费。同一个消费者组的消费者可以消费同一个 topic 的不同分区的数据，这也是为了提高 kafka 的吞吐量
 
+**工作流程**
 
+我们看上面的架构图中，producer 就是生产者，是数据的入口。producer 在写入数据的时候把数据写入到leader 中，不会直接将数据写入到 follower，那如何寻找 leader 呢？写入的流程又是怎样的？我们来看下面这张图：
+
+![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h0733yf0i6j211e0dqaao.jpg)
+
+1. 生产者从 kafka 集群获取分区 leader 信息
+2. 生产者将消息发送给 leader
+3. leader 将消息写入本地磁盘
+4. follower 从 leader 拉取消息数据
+5. follower 将消息写入本地磁盘后向 leader 发送 ack
+6. leader 收到所有的 follower 的 ack 之后向生产者发送 ack
+
+**选择 partition 的原则**
+
+那么在kafka中，如果某个 topic 有多个 partition，producer 又怎么知道该将数据发送给那个 partition呢？kafka 中有几个原则：
+
+1. partition 在写入的时候可以指定需要写入的 partition，如果有指定，则写入相应的 partition
+2. 如果没有指定 partition，但是设置了数据的 key，则会根据 key 的值hash 出一个 partition
+3. 如果既没有指定 partition，又没有设置 key，则会采用轮询方式，即每次取一小段时间的数据
 
 
 
