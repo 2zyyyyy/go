@@ -9148,25 +9148,81 @@ go get github.com/samuel/go-zookeeper/zk
 
 1. partition 在写入的时候可以指定需要写入的 partition，如果有指定，则写入相应的 partition
 2. 如果没有指定 partition，但是设置了数据的 key，则会根据 key 的值hash 出一个 partition
-3. 如果既没有指定 partition，又没有设置 key，则会采用轮询方式，即每次取一小段时间的数据
+3. 如果既没有指定 partition，又没有设置 key，则会采用轮询方式，即每次取一小段时间的数据写入某个 partition，下一小段的时间写入下一个 partition
 
+**ACK 应答机制**
 
+producer 再向 kafka 写入消息的时候，可以设置参数来确定是否确认 kafka 接收到数据，这个参数可以设置的值为 0，1，all
 
+- 0：表示 producer 往集群发送数据不需要等到集群的返回，不确保消息发送成功。安全性最低，但是效率最高
+- 1：表示 producer 往集群发送数据只要leader 应答就可以发送下一条，之确保 leader 发送成功
+- all：表示 producer 往集群发送数据需要所有的 follower 都完成从 leader 的同步才会发送下一条，确保 leader 发送成功和所有的副本都完成备份。安全性最高，但是效率最低
 
+最后需要注意的是，如果往不存在的 topic 写数据，kafka 会自动创建 topic，partition 和 replication的数量默认配置都是 1.
 
+**Topic 和数据日志**
 
+topic 是同一类别的消息记录（record）的集合。在 kafka 中，一个主题通常有多个订阅者。对于每个主题，kafka 集群维护了一个分区数据日志文件结构如下：
 
+![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h09fm1isk0j20bg07daac.jpg)
 
+每个 partition 都是一个有序并且不可变的消息记录集合。当心的数据写入时，就被追加到 partition 的末尾。在每个 partition 中，每条消息都会被分配一个顺序的唯一标识，这个表示被称为 offset，即偏移量。注意，kafka 只保证在同一个partition 内部消息是有序的，在不同的 partition 之间，并不能保证消息有序。
 
+kafka 可以配置一个保留期限，用来标识日志会在 kafka 集群内保留多长时间。kafka 集群会保留在保留期限内所有被发布的消息，不管这些消息是否被消费过。比如保留期限设置为 2 天，那么数据被发布到 kafka 集群的两天内，所有的这些数据都可以被消费。但是超过两天，这些数据将会被清空，以便为后续的数据腾出空间。由于 kafka 会将数据进行持久化存储（即写入到硬盘上），所有保留的数据大小可以设置一个比较大的值。
 
+**Partition结构**
 
+partition 在服务器上的表现形式就是一个一个的文件夹，每个 partition 的文件夹下面会有多组 segment文件，每组 segment 文件又包含.index 文件、.log文件、.timeindex 文件三个文件，其中.log 文件就是实际存储 message 的地方，而.index 和.timeindex 文件为索引文件，用于检索消息。
 
+**消费数据**
 
+多个消费者实例可以组成一个消费者组，并用一个标签来标识这个消费者组。一个消费者组中的不同消费者实例可以运行在不同的进程甚至不同的服务器上。
 
+如果所有的消费者实例都在同一个消费者组中，那么消息记录会被很好地均衡的发送到每个消费者实例。
 
+如果所有的消费者实例都在不同的消费者组，那么每一条消息记录会被广播到每一个消费者实例。
 
+![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h09i5vox4tj20eu080wew.jpg)
 
+举个例子：上图所示一个两个节点的 kafka 集群上拥有一个四个 partition（P0~P3）的 topic有两个消费者组都在消费这个 topic 的数据，，消费者组 A 有2个消费者实例，消费者组B 有 4 个消费者实例.
 
+从图中我们可以看到，在同一个消费者组中，每个消费者实例可以消费多个分区，但是每个分区最多只能被消费者中的一个实力消费。也就是说，如果有一个 4 个分组的主题，那么消费者组中最多只能有 4 个消费者实例去消费，多出来的都不会被分配到分区。其实这也很多理解，如果允许两个消费者实例同时消费同一个分区，那么就无法记录这个分区被这个消费者组消费的 offset 了。如果在消费者组中动态的上线或下线消费者，那么 kafka 集群会自动调整分区与消费者实例间的对应关系。
+
+**kafka 使用**
+
+- 安装
+  - brew install zookeeper
+  - brew install kafka
+- 启动
+  - 启动 zookeeper命令：`/usr/local/Cellar/kafka/3.1.0/bin/zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties &`
+  - ![image-20220316144451066](https://tva1.sinaimg.cn/large/e6c9d24ely1h0bpzj4mm6j20tq0esn2t.jpg)
+  - 启动 kafka 命令：`/usr/local/Cellar/kafka/3.1.0/bin/kafka-server-start /usr/local/etc/kafka/server.properties &`
+  - ![image-20220316144556431](https://tva1.sinaimg.cn/large/e6c9d24ely1h0bq0mharuj20qd0evmzc.jpg)
+
+- 查看是否启动成功
+  - 使用命令：`ps aux | grep kafka`和`ps aux | grep zookeeper`
+  - 可以正常看到进行就说明已经启动成功了
+  - ![image-20220316144805399](https://tva1.sinaimg.cn/large/e6c9d24ely1h0bq2x7ug1j20uu04t0ub.jpg)
+
+- 创建 topic（test）
+  - 创建一个名为 test 的 topic：`kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic test`
+  - ![image-20220316145358686](https://tva1.sinaimg.cn/large/e6c9d24ely1h0bq8zeykxj20mr0140sp.jpg)
+
+- 查看 topic 列表
+  - `kafka-topics --list --bootstrap-server  localhost:9092`
+  - ![image-20220316145505307](https://tva1.sinaimg.cn/large/e6c9d24ely1h0bqa55mdsj20d4014wed.jpg)
+
+- 向 topic 发送消息
+
+  - 向 topic（test）中发送消息：`kafka-console-producer --broker-list localhost:9092 --topic test`
+
+  ![image-20220316145633387](https://tva1.sinaimg.cn/large/e6c9d24ely1h0bqbnwpevj20fl01wdfu.jpg)
+
+- 接收消息
+
+  - 从 topic（test）中接收消息：` kafka-console-consumer --bootstrap-server localhost:9092 --topic test --from-beginning`
+
+  ![image-20220316145741038](https://tva1.sinaimg.cn/large/e6c9d24ely1h0bqctzd2wj20ir029q2y.jpg)
 
 
 
