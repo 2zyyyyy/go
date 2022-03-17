@@ -3,7 +3,7 @@ module go
 go 1.15
 
 require (
-	github.com/Shopify/sarama v1.30.0
+	github.com/Shopify/sarama v1.26.1
 	github.com/Shopify/toxiproxy v2.1.4+incompatible // indirect
 	github.com/coreos/etcd v2.3.8+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
@@ -19,7 +19,6 @@ require (
 	github.com/xdg/scram v1.0.3 // indirect
 	github.com/xdg/stringprep v1.0.3 // indirect
 	go.etcd.io/etcd v2.3.8+incompatible // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/text v0.3.7
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect

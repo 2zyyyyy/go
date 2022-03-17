@@ -9224,6 +9224,18 @@ partition 在服务器上的表现形式就是一个一个的文件夹，每个 
 
   ![image-20220316145741038](https://tva1.sinaimg.cn/large/e6c9d24ely1h0bqctzd2wj20ir029q2y.jpg)
 
+**Go 操作kafka**
+
+**第三方库**
+
+Go语言中连接kafka使用第三方库: github.com/Shopify/sarama。
+
+**链接 kafka 发送消息**
+
+```go
+
+```
+
 
 
 
