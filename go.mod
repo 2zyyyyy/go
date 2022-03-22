@@ -16,6 +16,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/onsi/gomega v1.16.0 // indirect
 	github.com/samuel/go-zookeeper v0.0.0-20201211165307-7117e9ea2414 // indirect
+	github.com/streadway/amqp v1.0.0
 	github.com/xdg/scram v1.0.3 // indirect
 	github.com/xdg/stringprep v1.0.3 // indirect
 	go.etcd.io/etcd v2.3.8+incompatible // indirect

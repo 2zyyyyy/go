@@ -9230,11 +9230,166 @@ partition 在服务器上的表现形式就是一个一个的文件夹，每个 
 
 Go语言中连接kafka使用第三方库: github.com/Shopify/sarama。
 
-**链接 kafka 发送消息**
+**Go操作RabbitMQ**
 
-```go
+****
 
-```
+**RabbitMQ 介绍**
+
+- 简单释义
+  - 消息总线（Message Queue），是一种跨进程、异步的通信机制，用于上下游传递消息。由消息系统来确保消息的可靠传递。
+- 背景描述
+  - 当前市面上的 mq 产品很多，比如 RabbitMQ、Kafka、ActiveMQ、ZeaoMQ 和阿里巴巴捐献给 Apache 的 RocketMQ都支持 MQ 的功能。
+- 适用场景
+  - 上下游逻辑解耦&&物理解耦
+  - 保证数据最终一致性
+  - 广播
+  - 错峰流控等
+
+**RabbitMQ 特点**
+
+RabbitMQ是由 erlang 语言开发的 AWQP 的开源实现。
+
+AWQP:Advanced Message Queue，高级消息队列协议。它是应用层协议的一个开放标准，为面向消息的中间件设计，基于此协议的客户端与消息中间件可传递消息，并不受产品、开发语言等的限制。
+
+- 可靠性 （reliablity）：使用了一些机制来保证可靠性，比如持久化、传输确认、发布确认
+- 灵活的路由（flexible routing）：在消息进入队列之前，通过 exchange 来路有消息。对于典型的路由功能，rabbit 已经提供了一些内置的 exchange 来实现。针对更复杂的路由功能，可以将多个 exchange 绑定在一起，也通过插件机制实现自己的 exchange
+- 消息集群 （clustering）：多个 RabbitMQ服务器可以组成一个集群，形成一个逻辑 broker
+- 高可用（highty avaliable queues）：队列可以再急群众的机器上进行镜像，使得在部分节点出问题的情况下队列仍然可用。
+- 多种协议（multi-protocol）：支持多重消息队列协议，如 STOMP、MQTT 等
+- 多种语言客户端（many clients）：几乎支持所有常用语言，如 Java、Ruby 等
+- 管理界面（management UI）：提供了易用的用户界面，使得用户可以监控和管理消息 broker 的许多方面
+- 跟踪机制（Tracing）：如果消息异常，RabbitMQ 提供了消息的跟踪机制，使用者可以找出发生了什么
+- 插件机制（plugin system）：提供了许多插件，来从多方面进行拓展，也可以编辑自己的插件
+
+**RabbitMQ 简单使用**
+
+![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h0dvcnfgv5j20b5034mx5.jpg)
+
+所有 MQ 产品从模型抽象来说，都是一样的过程：
+
+- 消费者（consumer）订阅某个队列
+- 生产者（product）创建消息，然后发布到队列中（queue），最终将消息发送到监听的消费者
+
+> 这只是最简单抽象的描述，具体到RabbitMQ则由更详细的概念需要解释。
+
+![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h0dvg11ixlj20fe04eaab.jpg)
+
+- Broker：表示消息队列服务器实体
+- Virtual Host：虚拟主机。标识一批交换机、消息队列和相关对象。虚拟主机是共享相同的身份认证和加密环境的独立服务器域。每个vhost本质上就是一个mini版的RabbitMQ服务器，拥有自己的队列、交换器、绑定和权限机制。vhost是AMQP概念的基础，必须在链接时指定，RabbitMQ默认的vhost是 /
+- Exchange：交换机，用来接收生产者发送的消息并将这些消息路由给服务器中的队列
+- Queue：消息队列，用来保存消息知道发送给消费者。他是消息的容器，也是消息的重点。一个消息可投入一个或多个队列。消息一直在队列里面，等待消费者连接到这个队列将其取走
+- Banding：绑定，用于消息队列和交换机之间的关联。一个绑定就是基于路由键将交换机和消息队列连接起来的路由规则，所以可以将交换器理解成一个由绑定构成的路由表
+- Channel：通道，多路复用连接中的一条独立的双向数据流通道。新到是建立在真实的TCP连接内地虚拟链接，AMQP命令都是通过新到发出去的，不管是发布消息、订阅队列还是接收消息，这些动作都是通过信道完成。因为对于操作系统来说，建立和销毁TCP都是非常昂贵的开销，所以引入了信道的概念，以复用一条TCP连接
+- Connection：网络连接，比如一个 TCP 连接
+- Publisher：消息的生产者，也是一个向交换器发布消息的客户端应用程序
+- Consumer：消息的消费者，表示一个从一个消息队列中取得消息的客户端应用程序
+- Message：消息，消息是不具名的，它是由消息头和消息体组成。消息体是不透明的，而消息头则是由一系列的可选属性组成，这些属性包括routing-key(路由键)、priority(优先级)、delivery-mode(消息可能需要持久性存储[消息的路由模式])等
+
+**RabbitMQ 的 6 种工作方式**
+
+1. simple 简单模式
+
+   ![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h0e51e41opj20b5034mx5.jpg)
+
+   - 消息产生者将消息放入队列
+   - 消息的消费者监听消协队列，如果队列中有消息，就消费掉。消息被那走后，自动从队列中删除（隐患：消息可能没有被消费者正确处理，已经从队列中消失了，造成消息的丢失）
+   - 应用场景：聊天（中间有一个过度的服务器；P 端，C 端）
+
+2. work 工作模式（资源的竞争）
+
+   ![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h0e5d6rww2j209t03p0sr.jpg)
+
+   - 消息产生着将消息放入队列消费者可以有多个，消费之 1、消费者 2，同时监听同一个队列。C1、C2共同争抢当前消息队列内容，谁先拿到谁来消费消息（隐患：高并发情况下，默认会产生某一个消息被多个消费者共同使用，可以设置可一个开关 syncronize，与同步锁的性能不一样，保证一条消息只能被一个消费者使用）
+   - 应用场景：红包；大项目中的资源调度（任务分配系统无需知道哪一个任务执行系统在空闲，直到将任务扔到消息队列中，空闲的系统自动争抢）
+
+3. publish/subscribe发布订阅（共享资源）
+
+   ![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h0f17byzsbj20b604kwel.jpg)
+
+   - x 代表交换机 rabbitMQ 内部组件，erlang 消息产生者是代码完成，代码的执行效率不高，消息产生者将消息放入交换机，交换机发布订阅把消息发送到所有消息队列中，对应消息队列的消费者拿到消息进行消费
+   - 相关场景：邮件群发、群聊天、广播（广告）
+
+4. routing 路由模式
+
+   ![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h0f19jm0upj20bv04d74f.jpg)
+
+   - 消息生产者将消息发送给交换机按照路由判断，路由是字符串（info）当前产生的消息携带路由字符（对象的方法），交换机根据路由的 key，只能匹配上路由 key 对应的消息队列，对应的消费者才能消费消息
+   - 根据业务功能定义路由字符串
+   - 从系统的代码逻辑中获取对应的功能字符串，将消息任务扔到对应的队列中业务场景
+
+5. topic 主题模式（路由模式的一种）
+
+   ![img](https://tva1.sinaimg.cn/large/e6c9d24ely1h0f60mf8vrj20dj04d74g.jpg)
+
+   - 星号井号代表通配符
+   - 星号代表多个单词,井号代表一个单词
+   - 路由功能添加模糊匹配
+   - 消息产生者产生消息,把消息交给交换机
+   - 交换机根据key的规则模糊匹配到对应的队列,由队列的监听消费者接收消息消费
+
+6. RPC（后续补充）
+
+**RabbitMQ 安装**
+
+*macOS 演示*
+
+使用命令`brew install rabbitmq`，如果没有安装erlang 会顺便一起安装。
+
+![image-20220319142700911](https://tva1.sinaimg.cn/large/e6c9d24ely1h0f6bu9fehj20lw0kddkt.jpg)
+
+**配置环境变量**
+
+1. 编辑文件
+
+   ```bash
+   vim ~/.bash_profile
+   ```
+
+2. 添加 rabbitmq 地址
+
+   ```base
+   # rabbitmq
+   PATH_RABBITMQ='/usr/local/Cellar/rabbitmq/3.9.13/sbin'
+   export PATH=$PATH:$PATH_RABBITMQ
+   ```
+
+3. 使配置生效
+
+   ```BASE
+   source ~/.bash_profile
+   ```
+
+**常见用法**
+
+- 启动 RabbitMQ
+
+  ```base
+  rabbitmq-server 
+  ```
+
+  ![image-20220319143333330](https://tva1.sinaimg.cn/large/e6c9d24ely1h0f6inkxpgj20mv0fxn02.jpg)
+
+  启动成功后，可以访问`http://localhost:15672/`，初始账号密码：`gusts/guest`
+
+  ![image-20220319143742416](https://tva1.sinaimg.cn/large/e6c9d24ely1h0f6mzowypj20zl0kn40m.jpg)
+
+**simple模式**
+
+- 消息产生者将消息放入队列
+- 消息的消费者监听(while) 消息队列,如果队列中有消息,就消费掉,消息被拿走后,自动从队列中删除(隐患 消息可能没有被消费者正确处理,已经从队列中消失了,造成消息的丢失)应用场景:聊天(中间有一个过度的服务器;p端,c端)
+
+做 simple 简单模式之前我们要先建一个`virture host`，并且给它分配一个用户名，用来隔离数据，根据自己的需要自行创建。（需要在后台创建用户分配权限，具体自行百度）
+
+
+
+**work 模式**
+
+
+
+
+
+**publish 模式**
 
 
 
@@ -9242,17 +9397,13 @@ Go语言中连接kafka使用第三方库: github.com/Shopify/sarama。
 
 
 
+**routing 模式**
 
 
 
 
 
-
-
-
-
-
-
+**topic 模式**
 
 
 
