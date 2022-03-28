@@ -1,4 +1,4 @@
-module go
+module .go
 
 go 1.15
 
@@ -10,10 +10,12 @@ require (
 	github.com/garyburd/redigo v1.6.3
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/hpcloud/tail v1.0.0
 	github.com/jmoiron/sqlx v1.3.4
+	github.com/olivere/elastic/v7 v7.0.32
 	github.com/onsi/gomega v1.16.0 // indirect
 	github.com/samuel/go-zookeeper v0.0.0-20201211165307-7117e9ea2414
 	github.com/streadway/amqp v1.0.0
