@@ -52,7 +52,7 @@ func main() {
 	}
 	fmt.Println(all)
 	// 多维数组的遍历
-	for _, v1 := range all { 
+	for _, v1 := range all {
 		fmt.Println(v1)
 		for _, v2 := range v1 {
 			fmt.Println(v2)

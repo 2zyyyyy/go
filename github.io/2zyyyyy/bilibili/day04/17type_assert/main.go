@@ -4,18 +4,18 @@ import "fmt"
 
 // 类型断言
 
-func assert1(a interface{})  {
+func assert1(a interface{}) {
 	fmt.Printf("%T\n", a)
 	str, ok := a.(string)
-	if !ok{
+	if !ok {
 		fmt.Println("断言失败~~")
-	}else {
+	} else {
 		fmt.Println("传进来的是一个字符串~~", str)
 	}
 	fmt.Println(str)
 }
 
-func assert2(a interface{})  {
+func assert2(a interface{}) {
 	fmt.Printf("%T\n", a)
 	switch t := a.(type) {
 	case string:

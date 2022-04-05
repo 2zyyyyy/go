@@ -18,7 +18,6 @@ type mac struct {
 	info information
 }
 
-
 func main() {
 	oneplus7P := phone{
 		battery: 4600,

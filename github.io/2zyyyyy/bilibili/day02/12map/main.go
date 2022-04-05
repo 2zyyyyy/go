@@ -17,7 +17,7 @@ func main() {
 		value := rand.Intn(100)           // 生成0~99随机整数
 		scoreMap[key] = value
 	}
-	// fmt.Println(scoreMap) 
+	// fmt.Println(scoreMap)
 	// 取出map中所有key存入切片keys
 	var keys = make([]string, 0, 200)
 	for key := range scoreMap {

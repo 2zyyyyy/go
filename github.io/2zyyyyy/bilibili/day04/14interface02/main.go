@@ -45,7 +45,7 @@ func main() {
 	fmt.Println(a1)
 
 	kfc := chicken{
-		feet:2,
+		feet: 2,
 	}
 	a1 = kfc
 	kfc.eat("牛肉！")

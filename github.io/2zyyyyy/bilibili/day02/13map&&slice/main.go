@@ -29,7 +29,7 @@ func main() {
 	s4 := strings.Split(s3, " ")
 	for i, v := range s4 {
 		fmt.Println(i, v)
-		count[v]++  // map值自增
+		count[v]++ // map值自增
 	}
 	fmt.Println(count)
 }
