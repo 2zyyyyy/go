@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // Print
@@ -59,10 +61,71 @@ func byteDemo() {
 	fmt.Printf("%X\n", s)
 }
 
+// 其他 flag
+func otherFlagDemo() {
+	s := "测试"
+	fmt.Printf("%s\n", s)
+	fmt.Printf("%5s\n", s)
+	fmt.Printf("%-5s\n", s)
+	fmt.Printf("%5.7s\n", s)
+	fmt.Printf("%-5.7s\n", s)
+	fmt.Printf("%5.2s\n", s)
+	fmt.Printf("%05s\n", s)
+}
+
+// Go语言fmt包下有fmt.Scan、fmt.Scanf、fmt.Scanln三个函数，可以在程序运行过程中从标准输入获取用户的输入。
+
+// scan
+func scanDemo() {
+	var (
+		name    string
+		age     int
+		married bool
+	)
+	_, _ = fmt.Scan(&name, &age, &married)
+	fmt.Printf("扫描结果 name：%s age：%d married：%t \n", name, age, married)
+}
+
+// scanf
+func scanfDemo() {
+	var (
+		name    string
+		age     int
+		married bool
+	)
+	_, _ = fmt.Scanf("1:%s 2:%d 3:%t", &name, &age, &married)
+	fmt.Printf("扫描结果 name：%s age：%d married：%t \n", name, age, married)
+}
+
+// scanfln
+func scanlnDemo() {
+	var (
+		name    string
+		age     int
+		married bool
+	)
+	_, _ = fmt.Scanln(&name, &age, &married)
+	fmt.Printf("扫描结果 name：%s age：%d married：%t \n", name, age, married)
+}
+
+// 有时候我们想完整获取输入的内容，而输入的内容可能包含空格，这种情况下可以使用bufio包来实现
+func removeSpaces() {
+	reader := bufio.NewReader(os.Stdin) // 从标准输入生成读对象
+	fmt.Printf("请输入内容：")
+	text, _ := reader.ReadString('\n') // 读到换行
+	text = strings.TrimSpace(text)
+	fmt.Printf("%#v\n", text)
+}
+
 func main() {
-	printDemo()
-	fprintDemo()
-	sprintDemo()
-	formatDemo()
-	byteDemo()
+	//printDemo()
+	//fprintDemo()
+	//sprintDemo()
+	//formatDemo()
+	//byteDemo()
+	//otherFlagDemo()
+	//scanDemo()
+	//scanfDemo()
+	//scanlnDemo()
+	removeSpaces()
 }
