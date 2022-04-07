@@ -722,25 +722,247 @@ func formatTime() {
 2022/04/06
 ```
 
+##### 解析字符串格式时间
+
+```GO
+func parseStringTime() {
+	now := time.Now()
+	fmt.Println("当前时间：", now)
+	// 加载时区
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// 按照指定时区和指定格式解析字符串时间
+	timeObj, err := time.ParseInLocation("2006/01/02 15:04:05", "2022/04/07 10:46:47", loc)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("指定字符串的时间：", timeObj)
+  fmt.Println("指定时间与当前时间差：", timeObj.Sub(now))
+}
+```
+
+输出：
+
+```GO
+master ± go run main.go 
+当前时间： 2022-04-07 10:51:54.699272 +0800 CST m=+0.000080455
+指定字符串的时间： 2022-04-07 10:46:47 +0800 CST
+指定时间与当前时间差： -5m7.699272s
+```
 
 
 
+### Log
 
+Go语言内置的log包实现了简单的日志服务。本文介绍了标准库log的基本使用。
 
+#### 使用Logger
 
+log包定义了Logger类型，该类型提供了一些格式化输出的方法。本包也提供了一个预定义的“标准”logger，可以通过调用函数Print系列(Print|Printf|Println）、Fatal系列（Fatal|Fatalf|Fatalln）、和Panic系列（Panic|Panicf|Panicln）来使用，比自行创建一个logger对象更容易使用。
 
+例如，我们可以像下面的代码一样直接通过log包来调用上面提到的方法，默认它们会将日志信息打印到终端界面：
 
+```GO
+func logDemo() {
+	log.Println("普通的 log~~")
+	msg := "普通的"
+	log.Printf("这是一条%s 的日志", msg)
+	log.Fatalln("这是一条会触发 fatal 的日志")
+	log.Panicln("这是一条会触发 panic 的日志")
+}
+```
 
+输出：
 
+```GO
+master ±✚ go run .
+2022/04/07 11:03:33 普通的 log~~
+2022/04/07 11:03:33 这是一条普通的 的日志
+2022/04/07 11:03:33 这是一条会触发 fatal 的日志
+exit status 1
+```
 
+logger会打印每条日志信息的日期、时间，默认输出到系统的标准错误。Fatal系列函数会在写入日志信息后调用os.Exit(1)。Panic系列函数会在写入日志信息后panic。
 
+#### 配置 Logger
 
+默认情况下的logger只会提供日志的时间信息，但是很多情况下我们希望得到更多信息，比如记录该日志的文件名和行号等。log标准库中为我们提供了定制这些设置的方法。
 
+log标准库中的Flags函数会返回标准logger的输出配置，而SetFlags函数用来设置标准logger的输出配置。
 
+```go
+    func Flags() int
+    func SetFlags(flag int) 
+```
 
+##### flag选项
 
+log标准库提供了如下的flag选项，它们是一系列定义好的常量。
 
+```go
+const (
+    // 控制输出日志信息的细节，不能控制输出的顺序和格式。
+    // 输出的日志在每一项后会有一个冒号分隔：例如2009/01/23 01:23:23.123123 /a/b/c/d.go:23: message
+    Ldate         = 1 << iota     // 日期：2009/01/23
+    Ltime                         // 时间：01:23:23
+    Lmicroseconds                 // 微秒级别的时间：01:23:23.123123（用于增强Ltime位）
+    Llongfile                     // 文件全路径名+行号： /a/b/c/d.go:23
+    Lshortfile                    // 文件名+行号：d.go:23（会覆盖掉Llongfile）
+    LUTC                          // 使用UTC时间
+    LstdFlags     = Ldate | Ltime // 标准logger的初始值
+) 
+```
 
+下面我们在记录日志之前先设置一下标准logger的输出选项如下：
+
+```GO
+func logFlagSet() {
+	log.SetFlags(log.Llongfile | log.Lmicroseconds | log.Ldate)
+	log.Println("这是一条普通的日志")
+}
+```
+
+输出：
+
+```GO
+ master ±✚ go run .
+2022/04/07 16:03:33.998119 /Users/gilbert/go/src/go/github.io/2zyyyyy/standardLibrary/log/main.go:16: 这是一条普通的日志
+```
+
+#### 配置日志前缀
+
+log标准库中还提供了关于日志信息前缀的两个方法：
+
+```
+    func Prefix() string
+    func SetPrefix(prefix string) 
+```
+
+其中Prefix函数用来查看标准logger的输出前缀，SetPrefix函数用来设置输出前缀。
+
+```go
+// 配置日志前缀
+func setPrefixDemo() {
+   log.SetFlags(log.Llongfile | log.Lmicroseconds | log.Ldate)
+   log.Println("这是一条普通的日志")
+   // 设置输出前缀
+   log.SetPrefix("[测试日志前缀]")
+   log.Println("这是一条普通的日志")
+}
+```
+
+输出：
+
+```GO
+master ±✚ go run .
+2022/04/07 16:09:14.843830 /Users/gilbert/go/src/go/github.io/2zyyyyy/standardLibrary/log/main.go:22: 这是一条普通的日志
+[测试日志前缀]2022/04/07 16:09:14.843939 /Users/gilbert/go/src/go/github.io/2zyyyyy/standardLibrary/log/main.go:25: 这是一条普通的日志
+```
+
+这样我们就能够在代码中为我们的日志信息添加指定的前缀，方便之后对日志信息进行检索和处理。
+
+#### 配置日志输出位置
+
+```
+func SetOutput(w io.Writer)
+```
+
+SetOutput函数用来设置标准logger的输出目的地，默认是标准错误输出。
+
+例如，下面的代码会把日志输出到同目录下的mylog.log文件中:
+
+```GO
+func logOutput() {
+	logFile, err := os.OpenFile("./mylog.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Println("open file failed, err:", err)
+		return
+	}
+	log.SetOutput(logFile)
+	log.SetFlags(log.Llongfile | log.Lmicroseconds | log.Ldate)
+	log.Println("这是一条很普通的日志。")
+	log.SetPrefix("[测试日志前缀]")
+	log.Println("这是一条很普通的日志。")
+}
+```
+
+查看指定的日志文件内容：
+
+```bash
+master ±✚ cat ./mylog.log    
+2022/04/07 17:13:59.799010 /Users/gilbert/go/src/go/github.io/2zyyyyy/standardLibrary/log/main.go:17: 这是一条很普通的日志。
+[测试日志前缀]2022/04/07 17:13:59.799157 /Users/gilbert/go/src/go/github.io/2zyyyyy/standardLibrary/log/main.go:19: 这是一条很普通的日志。
+```
+
+如果你要使用标准的logger，我们通常会把上面的配置操作写到init函数中。
+
+```go
+func init() {
+    logFile, err := os.OpenFile("./xx.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+    if err != nil {
+        fmt.Println("open log file failed, err:", err)
+        return
+    }
+    log.SetOutput(logFile)
+    log.SetFlags(log.Llongfile | log.Lmicroseconds | log.Ldate)
+}
+```
+
+#### 创建logger
+
+log标准库中还提供了一个创建新logger对象的构造函数–New，支持我们创建自己的logger示例。New函数的签名如下：
+
+```
+    func New(out io.Writer, prefix string, flag int) *Logger
+```
+
+New创建一个Logger对象。其中，参数out设置日志信息写入的目的地。参数prefix会添加到生成的每一条日志前面。参数flag定义日志的属性（时间、文件等等）。
+
+举个例子：
+
+```go
+func main() {
+    logger := log.New(os.Stdout, "<New>", log.Lshortfile|log.Ldate|log.Ltime)
+    logger.Println("这是自定义的logger记录的日志。")
+}
+```
+
+将上面的代码编译执行之后，得到结果如下：
+
+```
+    <New>2019/10/11 14:06:51 main.go:34: 这是自定义的logger记录的日志。
+```
+
+总结 :
+Go内置的log库功能有限，例如无法满足记录不同级别日志的情况，我们在实际的项目中根据自己的需要选择使用第三方的日志库，如logrus、zap等。
+
+### IO 操作
+
+#### 输入输出底层原理
+
+终端其实是一个文件，相关实例如下：
+
+- `os.Stdin`：标准输入的文件实例，类型为`*File`
+- `os.Stdout`：标准输出的文件实例，类型为`*File`
+- `os.Stderr`：标准错误输出的文件实例，类型为`*File`
+
+以文件的方式操作终端:
+
+```go
+package main
+
+import "os"
+
+func main() {
+    var buf [16]byte
+    os.Stdin.Read(buf[:])
+    os.Stdin.WriteString(string(buf[:]))
+}
+```
 
 
 

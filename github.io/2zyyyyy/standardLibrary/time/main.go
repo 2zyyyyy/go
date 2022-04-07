@@ -68,11 +68,32 @@ func formatTime() {
 	fmt.Println(now.Format("2006/01/02"))
 }
 
+// 解析字符串格式的时间
+func parseStringTime() {
+	now := time.Now()
+	fmt.Println("当前时间：", now)
+	// 加载时区
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// 按照指定时区和指定格式解析字符串时间
+	timeObj, err := time.ParseInLocation("2006/01/02 15:04:05", "2022/04/07 10:46:47", loc)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("指定字符串的时间：", timeObj)
+	fmt.Println("指定时间与当前时间差", timeObj.Sub(now))
+}
+
 func main() {
 	//timeNow()
 	//timestampDemo()
 	//timestampDemo2(1649247038)
 	//timeDifference()
 	//timer()
-	formatTime()
+	//formatTime()
+	parseStringTime()
 }

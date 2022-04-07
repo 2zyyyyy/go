@@ -1,0 +1,2 @@
+2022/04/07 17:13:59.799010 /Users/gilbert/go/src/go/github.io/2zyyyyy/standardLibrary/log/main.go:17: 这是一条很普通的日志。
+[测试日志前缀]2022/04/07 17:13:59.799157 /Users/gilbert/go/src/go/github.io/2zyyyyy/standardLibrary/log/main.go:19: 这是一条很普通的日志。
