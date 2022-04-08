@@ -964,6 +964,161 @@ func main() {
 }
 ```
 
+#### 文件操作相关 API
+
+- ```
+  func Create(name string) (file *File, err Error)
+  ```
+
+  - 根据提供的文件名创建新的文件，返回一个文件对象，默认权限是0666
+
+- ```
+  func NewFile(fd uintptr, name string) *File
+  ```
+
+  - 根据文件描述符创建相应的文件，返回一个文件对象
+
+- ```
+  func Open(name string) (file *File, err Error)
+  ```
+
+  - 只读方式打开一个名称为name的文件
+
+- ```
+  func OpenFile(name string, flag int, perm uint32) (file *File, err Error)
+  ```
+
+  - 打开名称为name的文件，flag是打开的方式，只读、读写等，perm是权限
+
+- ```
+  func (file *File) Write(b []byte) (n int, err Error)
+  ```
+
+  - 写入byte类型的信息到文件
+
+- ```
+  func (file *File) WriteAt(b []byte, off int64) (n int, err Error)
+  ```
+
+  - 在指定位置开始写入byte类型的信息
+
+- ```
+  func (file *File) WriteString(s string) (ret int, err Error)
+  ```
+
+  - 写入string信息到文件
+
+- ```
+  func (file *File) Read(b []byte) (n int, err Error)
+  ```
+
+  - 读取数据到b中
+
+- ```
+  func (file *File) ReadAt(b []byte, off int64) (n int, err Error)
+  ```
+
+  - 从off开始读取数据到b中
+
+- ```
+  func Remove(name string) Error
+  ```
+
+  - 删除文件名为name的文件
+
+  #### 打开和关闭文件
+
+  `os.Open()`函数能够打开一个文件，返回一个`*File`和一个`err`。对得到的文件实例调用close()方法能够关闭文件。
+
+  ```GO
+  // 打开和关闭文件
+  func openFile() {
+  	// 只读方式打开当前目录下的 main.go 文件
+  	file, err := os.Open("./main.go")
+  	defer func(file *os.File) {
+  		err := file.Close()
+  		if err != nil {
+  			fmt.Printf("close file failed, err%s\n", err)
+  			return
+  		}
+  	}(file)
+  	if err != nil {
+  		fmt.Println("open file failed! err:", err)
+  		return
+  	}
+  	log.Println("文件打开成功~")
+  }
+  ```
+
+  #### 写文件
+
+  ```GO
+  func writeFile() {
+  	// 新建文件
+  	file, err := os.Create("./create.txt")
+  	if err != nil {
+  		fmt.Println(err)
+  		return
+  	}
+  	defer func(file *os.File) {
+  		err := file.Close()
+  		if err != nil {
+  			fmt.Println(err)
+  			return
+  		}
+  	}(file)
+  	for i := 0; i < 5; i++ {
+  		_, _ = file.WriteString("ab\n")
+  		_, _ = file.Write([]byte("cd\n"))
+  	}
+  }
+  ```
+
+  #### 读文件
+
+  文件读取可以用file.Read()和file.ReadAt()，读到文件末尾会返回io.EOF的错误
+
+  ```GO
+  func readFile() {
+  	// 打开文件
+  	file, err := os.Open("./create.txt")
+  	if err != nil {
+  		fmt.Println("open file failed, err:", err)
+  		return
+  	}
+  	defer func(file *os.File) {
+  		err := file.Close()
+  		if err != nil {
+  			fmt.Println(err)
+  		}
+  	}(file)
+  	// 定义接收文件读取的字节数组
+  	var buf [128]byte
+  	var content []byte
+  	for {
+  		n, err := file.Read(buf[:])
+  		if err == io.EOF {
+  			// 读取结束
+  			break
+  		}
+  		if err != nil {
+  			fmt.Println("read file err", err)
+  			return
+  		}
+  		content = append(content, buf[:n]...)
+  	}
+  	fmt.Print(string(content))
+  }
+  ```
+
+  #### 拷贝文件
+
+  ```go
+  
+  ```
+
+  
+
 
 
 
