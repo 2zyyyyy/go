@@ -99,6 +99,21 @@ func copyFile() {
 		fmt.Println(err2)
 		return
 	}
+
+	// defer 关闭文件
+	defer func(srcFile *os.File) {
+		err := srcFile.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(srcFile)
+	defer func(newFile *os.File) {
+		err := newFile.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(newFile)
+
 	// 缓存读取
 	buf := make([]byte, 1024)
 	for {
@@ -108,6 +123,12 @@ func copyFile() {
 			fmt.Println("读取完毕~")
 			break
 		}
+		// 写进去
+		lines, err := newFile.Write(buf[:n])
+		if err != nil {
+			return
+		}
+		fmt.Printf("写入成功，共写入%d数据\n", lines)
 	}
 }
 
@@ -116,4 +137,5 @@ func main() {
 	//openFile()
 	//writeFile()
 	//readFile()
+	copyFile()
 }
