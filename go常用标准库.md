@@ -1,4 +1,4 @@
-# go 常用标准库
+# Go 常用标准库
 
 ### fmt
 
@@ -1543,21 +1543,511 @@ formatInt: -2
 formatBoos: 2          
 ```
 
+#### 其他
 
+##### isPrint()
 
+```go
+func IsPrint(r rune) bool 
+```
 
+返回一个字符是否是可打印的，和unicode.IsPrint一样，r必须是：字母（广义）、数字、标点、符号、ASCII空格。
 
+##### CanBackquote()
 
+```go
+func CanBackquote(s string) bool 
+```
 
+返回字符串s是否可以不被修改的表示为一个单行的、没有空格和tab之外控制字符的反引号字符串。
 
+##### 其他
 
+除上文列出的函数外，strconv包中还有Append系列、Quote系列等函数。具体用法可查看[官方文档](https://golang.org/pkg/strconv/)。
 
+### Template
 
+html/template包实现了数据驱动的模板，用于生成可对抗代码注入的安全HTML输出。它提供了和text/template包相同的接口，Go语言中输出HTML的场景都应使用text/template包。
 
+****
 
+#### 模板
 
+在基于MVC的Web架构中，我们通常需要在后端渲染一些数据到HTML文件中，从而实现动态的网页效果。
 
+#### 模板示例
 
+通过将模板应用于一个数据结构（即该数据结构作为模板的参数）来执行，来获得输出。模板中的注释引用数据接口的元素（一般如结构体的字段或者字典的键）来控制执行过程和获取需要呈现的值。模板执行时会遍历结构并将指针表示为’.‘（称之为”dot”）指向运行过程中数据结构的当前位置的值。
+
+用作模板的输入文本必须是utf-8编码的文本。”Action”—数据运算和控制单位—由”{{“和”}}“界定；在Action之外的所有文本都不做修改的拷贝到输出中。Action内部不能有换行，但注释可以有换行。
+
+HTML文件代码如下：
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Hello</title>
+</head>
+<body>
+    <p>Hello {{.}}</p>
+</body>
+</html>
+```
+
+我们的HTTP server端代码如下：
+
+```go
+package main
+
+import (
+	"fmt"
+	"html/template"
+	"net/http"
+)
+
+// HTTP server端代码
+func sayHello(w http.ResponseWriter, r *http.Request) {
+	// 解析指定文件生成模板对象
+	tmp, err := template.ParseFiles("./hello.html")
+	if err != nil {
+		fmt.Println("create template failed, err:", err)
+		return
+	}
+	// 利用给定数据渲染模板，并将结果写入 w
+	_ = tmp.Execute(w, "www.google.com")
+}
+
+func main() {
+	http.HandleFunc("/", sayHello)
+	err := http.ListenAndServe(":9090", nil)
+	if err != nil {
+		fmt.Println("http server failed, err:", err)
+		return
+	}
+}
+```
+
+#### 模板语法
+
+`{{.}}`
+
+模板语法都包含在`{{和}}`中间，其中`{{.}}`中的点表示当前对象。
+
+当我们传入一个结构体对象时，我们可以根据`.`来访问结构体的对应字段。
+
+略过。
+
+### Http
+
+Go语言内置的net/http包十分的优秀，提供了HTTP客户端和服务端的实现。
+
+****
+
+#### net/httpnet/http介绍
+
+Go语言内置的net/http包提供了HTTP客户端和服务端的实现。
+
+#### HTTP 协议
+
+超文本传输协议（HTTP，HyperText Transfer Protocol)是互联网上应用最为广泛的一种网络传输协议，所有的WWW文件都必须遵守这个标准。设计HTTP最初的目的是为了提供一种发布和接收HTML页面的方法。
+
+#### HTTP 客户端
+
+基本的HTTP/HTTPS请求
+Get、Head、Post和PostForm函数发出HTTP/HTTPS请求。
+
+```go
+resp, err := http.Get("http://www.google.com/")
+...
+resp, err := http.Post("http://www.google.com/upload", "image/jpeg", &buf)
+...
+resp, err := http.PostForm("http://www.google.com/form",
+    url.Values{"key": {"Value"}, "id": {"123"}}) 
+```
+
+程序在使用完response后必须关闭回复的主体。
+
+```go
+resp, err := http.Get("http://www.google.com/")
+if err != nil {
+    // handle error
+}
+defer resp.Body.Close()
+body, err := ioutil.ReadAll(resp.Body)
+// ...
+```
+
+#### Get 请求示例
+
+使用net/http包编写一个简单的发送HTTP请求的Client端，代码如下：
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+)
+
+// net/http get demo
+func main() {
+	res, err := http.Get("https://2zyyyyy.github.io/")
+	if err != nil {
+		fmt.Println("get failed, err:", err)
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("defer res.Body close failed, err:", err)
+		}
+	}(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println("read from resp.Body failed, err:", err)
+		return
+	}
+	fmt.Println(string(body))
+}
+```
+
+将上面的代码保存之后编译成可执行文件，执行之后就能在终端打印网站首页的内容了，我们的浏览器其实就是一个发送和接收HTTP协议数据的客户端，我们平时通过浏览器访问网页其实就是从网站的服务器接收HTTP数据，然后浏览器会按照HTML、CSS等规则将网页渲染展示出来。
+
+#### 带参数的 Get 请求
+
+关于GET请求的参数需要使用Go语言内置的net/url这个标准库来处理。
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+)
+
+// 关于GET请求的参数需要使用Go语言内置的net/url这个标准库来处理。
+func main() {
+	apiUrl := "http://127.0.0.1:9090/get"
+	// url param
+	data := url.Values{}
+	data.Set("name", "月满轩尼诗")
+	data.Set("age", "18")
+	u, err := url.ParseRequestURI(apiUrl)
+	if err != nil {
+		fmt.Printf("parse url requestUrl failed, err:%v\n", err)
+	}
+	u.RawQuery = data.Encode() // url encode
+	fmt.Println(u.String())
+	res, err := http.Get(u.String())
+	if err != nil {
+		fmt.Printf("get failed, err:%v\n", err)
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("res body close failed, err:", err)
+		}
+	}(res.Body)
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println("readAll failed, err:", err)
+		return
+	}
+	fmt.Println(string(b))
+}
+```
+
+对应的Server端HandlerFunc如下：
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+)
+
+// server 端
+func getHandler(w http.ResponseWriter, r *http.Request) {
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("r.body.close failed, err:", err)
+		}
+	}(r.Body)
+	data := r.URL.Query()
+	fmt.Println(data.Get("name"))
+	fmt.Println(data.Get("age"))
+	answer := `{"status" : "ok"}`
+	_, _ = w.Write([]byte(answer))
+}
+```
+
+### Context
+
+在 Go http包的Server中，每一个请求在都有一个对应的 goroutine 去处理。请求处理函数通常会启动额外的 goroutine 用来访问后端服务，比如数据库和RPC服务。用来处理一个请求的 goroutine 通常需要访问一些与请求特定的数据，比如终端用户的身份认证信息、验证相关的token、请求的截止时间。 当一个请求被取消或超时时，所有用来处理该请求的 goroutine 都应该迅速退出，然后系统才能释放这些 goroutine 占用的资源。
+
+#### 基本示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+// context
+
+var wg sync.WaitGroup
+
+// 基本示例
+func worker() {
+	for {
+		fmt.Println("worker")
+		time.Sleep(time.Second)
+	}
+	// 如何接收外部命令实现退出
+	wg.Done()
+}
+
+func main() {
+	wg.Add(1)
+	go worker()
+	// 如何优雅的实现结束子goroutine
+	wg.Wait()
+	fmt.Println("over~")
+}
+```
+
+#### 全局变量方式
+
+```go
+// 全局变量方式存在的问题：
+// 1. 使用全局变量在跨包调用时不容易统一
+// 2. 如果worker中再启动goroutine，就不太好控制了。
+func worker() {
+	for {
+		fmt.Println("worker")
+		time.Sleep(time.Second)
+		if exit {
+			break
+		}
+	}
+	wg.Done()
+}
+
+func main() {
+	wg.Add(1)
+	go worker()
+	time.Sleep(time.Second * 3) // sleep3秒以免程序过快退出
+	exit = true                 // 修改全局变量实现子goroutine的退出
+	wg.Wait()
+	fmt.Println("over")
+}
+```
+
+#### 通道方式
+
+```go
+// 管道方式存在的问题：
+// 1. 使用全局变量在跨包调用时不容易实现规范和统一，需要维护一个共用的channel
+func worker(exitChan chan struct{}) {
+LOOP:
+	for {
+		fmt.Println("worker")
+		time.Sleep(time.Second)
+		select {
+		case <-exitChan: // 等待接收上级通知
+			break LOOP
+		default:
+		}
+	}
+	wg.Done()
+}
+
+func main() {
+	var exitChan = make(chan struct{})
+	wg.Add(1)
+	go worker(exitChan)
+	time.Sleep(time.Second * 3)
+	// 给予 goroutine 发送推出的信号
+	exitChan <- struct{}{}
+	close(exitChan)
+	wg.Wait()
+	fmt.Println("over~")
+}
+```
+
+##### 官方方案
+
+```GO
+// 官方版
+func worker(ctx context.Context) {
+LOOP:
+	for {
+		fmt.Println("worker")
+		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done(): // 等待上级通知
+			break LOOP
+		default:
+		}
+	}
+	wg.Done()
+}
+
+func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	wg.Add(1)
+	go worker(ctx)
+	time.Sleep(time.Second * 3)
+	// 通知 goroutine 结束
+	cancel()
+	wg.Wait()
+	fmt.Println("over~")
+}
+```
+
+当子goroutine又开启另外一个goroutine时，只需要将ctx传入即可：
+
+```GO
+func worker(ctx context.Context) {
+	go worker2(ctx)
+LOOP:
+	for {
+		fmt.Println("worker1")
+		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done(): // 等待上级通知
+			break LOOP
+		default:
+		}
+	}
+	wg.Done()
+}
+
+func worker2(ctx context.Context) {
+LOOP:
+	for {
+		fmt.Println("worker2")
+		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done(): // 等待上级通知
+			break LOOP
+		default:
+		}
+	}
+}
+
+func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	wg.Add(1)
+	go worker(ctx)
+	time.Sleep(time.Second * 3)
+	// 通知 goroutine 结束
+	cancel()
+	wg.Wait()
+	fmt.Println("over~")
+}
+```
+
+#### Context 初识
+
+Go1.7加入了一个新的标准库context，它定义了Context类型，专门用来简化 对于处理单个请求的多个 goroutine 之间与请求域的数据、取消信号、截止时间等相关操作，这些操作可能涉及多个 API 调用。
+
+对服务器传入的请求应该创建上下文，而对服务器的传出调用应该接受上下文。它们之间的函数调用链必须传递上下文，或者可以使用WithCancel、WithDeadline、WithTimeout或WithValue创建的派生上下文。当一个上下文被取消时，它派生的所有上下文也被取消。
+
+#### Context 接口
+
+context.Context是一个接口，该接口定义了四个需要实现的方法。具体签名如下：
+
+```go
+type Context interface {
+    Deadline() (deadline time.Time, ok bool)
+    Done() <-chan struct{}
+    Err() error
+    Value(key interface{}) interface{}
+}
+```
+
+其中：
+
+- Deadline方法需要返回当前Context被取消的时间，也就是完成工作的截止时间（deadline）；
+- Done方法需要返回一个Channel，这个Channel会在当前工作完成或者上下文被取消之后关闭，多次调用Done方法会返回同一个Channel；
+- Err方法会返回当前Context结束的原因，它只会在Done返回的Channel被关闭时才会返回非空的值；
+  - 如果当前Context被取消就会返回Canceled错误；
+  - 如果当前Context超时就会返回DeadlineExceeded错误；
+- Value方法会从Context中返回键对应的值，对于同一个上下文来说，多次调用Value 并传入相同的Key会返回相同的结果，该方法仅用于传递跨API和进程间跟请求域的数据；
+
+#### Background()和 TODO()
+
+Go内置两个函数：Background()和TODO()，这两个函数分别返回一个实现了Context接口的background和todo。我们代码中最开始都是以这两个内置的上下文对象作为最顶层的partent context，衍生出更多的子上下文对象。
+
+Background()主要用于main函数、初始化以及测试代码中，作为Context这个树结构的最顶层的Context，也就是根Context。
+
+TODO()，它目前还不知道具体的使用场景，如果我们不知道该使用什么Context的时候，可以使用这个。
+
+background和todo本质上都是emptyCtx结构体类型，是一个不可取消，没有设置截止时间，没有携带任何值的Context。
+
+#### With 系列函数
+
+此外，context包中还定义了四个With系列函数。
+
+##### WithCancel()
+
+WithCancel的函数签名如下：
+
+```go
+    func WithCancel(parent Context) (ctx Context, cancel CancelFunc) 
+```
+
+WithCancel返回带有新Done通道的父节点的副本。当调用返回的cancel函数或当关闭父上下文的Done通道时，将关闭返回上下文的Done通道，无论先发生什么情况。
+
+取消此上下文将释放与其关联的资源，因此代码应该在此上下文中运行的操作完成后立即调用cancel。
+
+```go
+func gen(ctx context.Context) <-chan int {
+        dst := make(chan int)
+        n := 1
+        go func() {
+            for {
+                select {
+                case <-ctx.Done():
+                    return // return结束该goroutine，防止泄露
+                case dst <- n:
+                    n++
+                }
+            }
+        }()
+        return dst
+    }
+func main() {
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel() // 当我们取完需要的整数后调用cancel
+
+    for n := range gen(ctx) {
+        fmt.Println(n)
+        if n == 5 {
+            break
+        }
+    }
+}
+```
+
+上面的示例代码中，gen函数在单独的goroutine中生成整数并将它们发送到返回的通道。 gen的调用者在使用生成的整数之后需要取消上下文，以免gen启动的内部goroutine发生泄漏。
 
 
 
