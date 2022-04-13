@@ -2545,13 +2545,66 @@ func main() {
 }
 ```
 
+### 反射
 
+反射是指在程序运行期对程序本身进行访问和修改的能力
 
+****
 
+#### 变量的内在机制
 
+- 变量包含类型信息和值信息 var arr [10]int arr[0] = 10
+- 类型信息：是静态的元信息，是预先定义好的
+- 值信息：是程序运行过程中动态改变的
 
+#### 反射的使用
 
+- reflect包封装了反射相关的方法
+- 获取类型信息：reflect.TypeOf，是静态的
+- 获取值信息：reflect.ValueOf，是动态的
 
+#### 空接口与反射
+
+- 反射可以在运行时动态获取程序的各种详细信息
+
+- 反射获取interface类型信息
+
+  ```go
+  // 反射获取interface类型信息
+  func reflectType(a interface{}) {
+  	t := reflect.TypeOf(a)
+  	fmt.Println("类型是：", t)
+  	// kind()可以获取具体类型
+  	k := t.Kind()
+  	fmt.Println(k)
+  	switch k {
+  	case reflect.Float64:
+  		fmt.Printf("a is float64\n")
+  	case reflect.String:
+  		fmt.Printf("a is string\n")
+  	default:
+  		fmt.Printf("a is other type\n")
+  	}
+  }
+  ```
+
+- 反射获取interface值信息
+
+  ```go
+  // 反射获取interface值信息
+  func reflectValue(a interface{}) {
+  	v := reflect.ValueOf(a)
+  	fmt.Println(v)
+  	k := v.Kind()
+  	fmt.Println(k)
+  	switch k {
+  	case reflect.Float64:
+  		fmt.Println("a is", v.Float())
+  	}
+  }
+  ```
+
+  
 
 
 
