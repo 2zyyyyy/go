@@ -1178,15 +1178,6 @@ func main() {
 - bufio读数据
 
   ```GO
-  package main
-  
-  import (
-  	"bufio"
-  	"fmt"
-  	"io"
-  	"os"
-  )
-  
   // bufIo
   func writeFile() {
   	// w(写) 2 r(读) 4 x(执行) 1
@@ -1240,28 +1231,21 @@ func main() {
   	readFile()
   }
   ```
-
+  
   #### ioutil工具包
-
+  
   - 工具包写文件
   - 工具包读取文件
-
+  
   ```go
-  package main
-  
-  import (
-  	"fmt"
-  	"io/ioutil"
-  )
-  
   func writeFile() {
   	err := ioutil.WriteFile("./ioUtil.txt", []byte("月满轩尼诗"), 0666)
-  	if err != nil {
+	if err != nil {
   		fmt.Println("ioUtil write file failed, err:", err)
-  		return
+		return
   	}
   }
-  
+
   func readFile() {
   	content, err := ioutil.ReadFile("./ioUtil.txt")
   	if err != nil {
@@ -1284,16 +1268,6 @@ func main() {
 使用文件操作相关知识，模拟实现Linux的cat命令功能
 
 ```GO
-package main
-
-import (
-	"bufio"
-	"flag"
-	"fmt"
-	"io"
-	"os"
-)
-
 // 使用文件操作相关知识，模拟实现linux平台cat命令的功能
 
 // cat命令实现
@@ -1601,14 +1575,6 @@ HTML文件代码如下：
 我们的HTTP server端代码如下：
 
 ```go
-package main
-
-import (
-	"fmt"
-	"html/template"
-	"net/http"
-)
-
 // HTTP server端代码
 func sayHello(w http.ResponseWriter, r *http.Request) {
 	// 解析指定文件生成模板对象
@@ -1686,15 +1652,6 @@ body, err := ioutil.ReadAll(resp.Body)
 使用net/http包编写一个简单的发送HTTP请求的Client端，代码如下：
 
 ```go
-package main
-
-import (
-	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-)
-
 // net/http get demo
 func main() {
 	res, err := http.Get("https://2zyyyyy.github.io/")
@@ -1724,16 +1681,6 @@ func main() {
 关于GET请求的参数需要使用Go语言内置的net/url这个标准库来处理。
 
 ```go
-package main
-
-import (
-	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-)
-
 // 关于GET请求的参数需要使用Go语言内置的net/url这个标准库来处理。
 func main() {
 	apiUrl := "http://127.0.0.1:9090/get"
@@ -1770,14 +1717,6 @@ func main() {
 对应的Server端HandlerFunc如下：
 
 ```go
-package main
-
-import (
-	"fmt"
-	"io"
-	"net/http"
-)
-
 // server 端
 func getHandler(w http.ResponseWriter, r *http.Request) {
 	defer func(Body io.ReadCloser) {
@@ -1801,16 +1740,6 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 #### 基本示例
 
 ```go
-package main
-
-import (
-	"fmt"
-	"sync"
-	"time"
-)
-
-// context
-
 var wg sync.WaitGroup
 
 // 基本示例
@@ -2047,7 +1976,336 @@ func main() {
 }
 ```
 
-上面的示例代码中，gen函数在单独的goroutine中生成整数并将它们发送到返回的通道。 gen的调用者在使用生成的整数之后需要取消上下文，以免gen启动的内部goroutine发生泄漏。
+上面的示例代码中，gen函数在单独的goroutine中生成整数并将它们发送到返回的通道。gen的调用者在使用生成的整数之后需要取消上下文，以免gen启动的内部goroutine发生泄漏。
+
+##### WithDeadline()
+
+WithDeadline的函数签名如下：
+
+```
+func WithDeadline(parent Context, deadline time.Time) (Context, CancelFunc)
+```
+
+返回父上下文的副本，并将deadline调整为不迟于d。如果父上下文的deadline已经早于d，则WithDeadline(parent, d)在语义上等同于父上下文。当截止日过期时，当调用返回的cancel函数时，或者当父上下文的Done通道关闭时，返回上下文的Done通道将被关闭，以最先发生的情况为准。
+
+取消此上下文将释放与其关联的资源，因此代码应该在此上下文中运行的操作完成后立即调用cancel。
+
+```go
+func main() {
+    d := time.Now().Add(50 * time.Millisecond)
+    ctx, cancel := context.WithDeadline(context.Background(), d)
+
+    // 尽管ctx会过期，但在任何情况下调用它的cancel函数都是很好的实践。
+    // 如果不这样做，可能会使上下文及其父类存活的时间超过必要的时间。
+    defer cancel()
+
+    select {
+    case <-time.After(1 * time.Second):
+        fmt.Println("overslept")
+    case <-ctx.Done():
+        fmt.Println(ctx.Err())
+    }
+} 
+```
+
+上面的代码中，定义了一个50毫秒之后过期的deadline，然后我们调用context.WithDeadline(context.Background(), d)得到一个上下文（ctx）和一个取消函数（cancel），然后使用一个select让主程序陷入等待：等待1秒后打印overslept退出或者等待ctx过期后退出。 因为ctx50毫秒后就过期，所以ctx.Done()会先接收到值，上面的代码会打印ctx.Err()取消原因。
+
+##### WithTimeout
+
+WithTimeout的函数签名如下：
+
+```
+func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) 
+```
+
+WithTimeout返回WithDeadline(parent, time.Now().Add(timeout))。
+
+取消此上下文将释放与其相关的资源，因此代码应该在此上下文中运行的操作完成后立即调用cancel，通常用于数据库或者网络连接的超时控制。具体示例如下：
+
+```go
+var wg sync.WaitGroup
+
+func worker(ctx context.Context) {
+LOOP:
+	for {
+		fmt.Println("do connection...")
+		time.Sleep(time.Millisecond * 10)
+		select {
+		case <-ctx.Done(): // 50ms 后自动调用
+			break LOOP
+		default:
+		}
+	}
+	fmt.Println("worker done!")
+	wg.Done()
+}
+
+func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
+	wg.Add(1)
+	go worker(ctx)
+	time.Sleep(time.Second * 5)
+	cancel()
+	wg.Wait()
+	fmt.Println("over~")
+}
+```
+
+##### WithValue
+
+WithValue函数能够将请求作用域的数据与 Context 对象建立关系。声明如下：
+
+```
+    func WithValue(parent Context, key, val interface{}) Context 
+```
+
+WithValue返回父节点的副本，其中与key关联的值为val。
+
+仅对API和进程间传递请求域的数据使用上下文值，而不是使用它来传递可选参数给函数。
+
+所提供的键必须是可比较的，并且不应该是string类型或任何其他内置类型，以避免使用上下文在包之间发生冲突。WithValue的用户应该为键定义自己的类型。为了避免在分配给interface{}时进行分配，上下文键通常具有具体类型struct{}。或者，导出的上下文关键变量的静态类型应该是指针或接口。
+
+```go
+type TraceCode string
+
+var wg sync.WaitGroup
+
+func worker(ctx context.Context) {
+	key := TraceCode("TRACE_CODE")
+	traceCode, ok := ctx.Value(key).(string) // 在 goroutine 获取 trace code
+	if !ok {
+		fmt.Println("invalid trace code")
+	}
+LOOP:
+	for {
+		fmt.Printf("worker, trace code:%s\n", traceCode)
+		time.Sleep(time.Millisecond * 10)
+		select {
+		case <-ctx.Done(): // 50ms 后自动调用
+			break LOOP
+		default:
+		}
+	}
+	fmt.Println("work done~")
+	wg.Done()
+}
+
+func main() {
+	// 设置一个50毫秒的超时
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
+	// 在系统的入口中设置trace code传递给后续启动的goroutine实现日志数据聚合
+	ctx = context.WithValue(ctx, TraceCode("TRACE_CODE"), "12512312234")
+	wg.Add(1)
+	go worker(ctx)
+	time.Sleep(time.Second * 5)
+	cancel() // 通知子goroutine结束
+	wg.Wait()
+	fmt.Println("over")
+}
+```
+
+#### 注意事项
+
+- 推荐以参数的方式显示传递Context
+- 以Context作为参数的函数方法，应该把Context作为第一个参数。
+- 给一个函数方法传递Context的时候，不要传递nil，如果不知道传递什么，就使用context.TODO()
+- Context的Value相关方法应该传递请求域的必要数据，不应该用于传递可选参数
+- Context是线程安全的，可以放心的在多个goroutine中传递
+
+#### 客户端超时取消示例
+
+调用服务端API时如何在客户端实现超时控制？
+
+##### server 端
+
+```GO
+// server 端 随机出现慢响应
+func indexHandle(w http.ResponseWriter, r *http.Request) {
+	num := rand.Intn(2)
+	if num == 0 {
+		time.Sleep(time.Second * 10) // 耗时 10s 的慢响应
+		_, _ = fmt.Fprintf(w, "slow response!")
+		return
+	}
+	_, _ = fmt.Fprintf(w, "quick respinse!")
+}
+
+func main() {
+	http.HandleFunc("/", indexHandle)
+	err := http.ListenAndServe(":8000", nil)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+#####client 端
+
+```GO
+// client端
+type resData struct {
+	res *http.Response
+	err error
+}
+
+func doCall(ctx context.Context) {
+	transport := http.Transport{
+		// 请求频繁可定义全局的 client 对象并启用长链接 不频繁的使用短连接
+		DisableKeepAlives: true}
+	client := http.Client{
+		Transport: &transport,
+	}
+	resChan := make(chan *resData, 1)
+	req, err := http.NewRequest("GET", "http://127.0.0.1:8000/", nil)
+	if err != nil {
+		fmt.Printf("new request failed, err:%v\n", err)
+		return
+	}
+	// 使用带超时的 ctx 创建一个新的 client request
+	req = req.WithContext(ctx)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+	go func() {
+		res, err := client.Do(req)
+		fmt.Printf("client.do res:%v, err:%v\n", res, err)
+		rd := &resData{
+			res: res,
+			err: err,
+		}
+		resChan <- rd
+		wg.Done()
+	}()
+
+	select {
+	case <-ctx.Done():
+		fmt.Println("call api timeout")
+	case result := <-resChan:
+		fmt.Println("call server api success")
+		if result.err != nil {
+			fmt.Printf("call server api failed, err:%v\n", result.err)
+			return
+		}
+		defer func(Body io.ReadCloser) {
+			_ = Body.Close()
+		}(result.res.Body)
+		data, _ := ioutil.ReadAll(result.res.Body)
+		fmt.Printf("res:%v\n", string(data))
+	}
+}
+
+func main() {
+	// 定义 100ms 超时
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel() // 调用 cancel 释放 goroutine 资源
+	doCall(ctx)
+}
+```
+
+### 数据格式
+
+#### 数据格式介绍
+
+- 是系统中数据交互不可缺少的内容
+- 这里主要介绍JSON、XML、MSGPack
+
+#### JSON
+
+- json是完全独立于语言的文本格式，是k-v的形式 name:zs
+
+- 应用场景：前后端交互，系统间数据交互
+
+  ```json
+  {
+      "meta":{
+          "filter_count":18
+      },
+      "data":[
+          {
+              "created_on":"2022-03-06 06:13:18",
+              "version":"16.0.9",
+              "content":"Navicat for MySQL 16.0.9\nFixed:\n- The \"Compare\" button did not work in Data Synchronization in some cases\n- \"Couldn't open known_hosts file\" error occurred when the SSH path contained Chinese characters\n- Minor bug fixes and improvements"
+          }
+      ],
+      "public":true
+  }
+  ```
+
+  - json使用go语言内置的encoding/json 标准库
+  - 编码json使用json.Marshal()函数可以对一组数据进行JSON格式的编码
+
+  ```
+      func Marshal(v interface{}) ([]byte, error) 
+  ```
+
+  示例过结构体生成json：
+
+  ```go
+  // 数据格式
+  type Equip struct {
+  	Name         string
+  	Introduction string
+  	Occupation   string
+  	Estate       int64
+  }
+  
+  func main() {
+  	equip := Equip{
+  		"破军",
+  		"北斗第七星，有名破军。破军主破，其利天下无敢拂其锋芒，刀魂暴戾，易走偏锋",
+  		"东夷战士",
+  		120,
+  	}
+  	// 编码 json
+  	b, err := json.Marshal(equip)
+  	if err != nil {
+  		fmt.Println("json err:", err)
+  	}
+  	fmt.Println(string(b))
+  
+  	// 格式化输出
+  	b, err = json.MarshalIndent(equip, "", "	")
+  	if err != nil {
+  		fmt.Println("json err ", err)
+  	}
+  	fmt.Println(string(b))
+  }
+  
+  // 输出
+   $ go run .
+  {"Name":"破军","Introduction":"北斗第七星，有名破军。破军主破，其利天下无敢拂其锋芒，刀魂暴戾，易走偏锋","Occupation":"东夷战士","Estate":120}
+  {
+          "Name": "破军",
+          "Introduction": "北斗第七星，有名破军。破军主破，其利天下无敢拂其锋芒，刀魂暴戾，易走偏锋",
+          "Occupation": "东夷战士",
+          "Estate": 120
+  }
+  
+  ```
+
+  
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
