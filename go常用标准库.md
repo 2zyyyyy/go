@@ -1245,7 +1245,7 @@ func main() {
 		return
   	}
   }
-
+  
   func readFile() {
   	content, err := ioutil.ReadFile("./ioUtil.txt")
   	if err != nil {
@@ -2280,12 +2280,270 @@ func main() {
           "Occupation": "东夷战士",
           "Estate": 120
   }
-  
   ```
 
-  
+  ##### struct tag
 
+  ```go
+  type Equip struct {
+      Name         string `json:"name"`
+      Introduction string `json:"introduction"`
+      Occupation   string `json:"occupation"`
+      Estate       int64 `json:"estate"`
+  }
+  ```
+
+  示例通过map生成json：
+
+  ```GO
+  // 示例通过map生成json
+  func mapJson() {
+  	student := make(map[string]interface{})
+  	student["name"] = "星河万里"
+  	student["age"] = 18
+  	student["sex"] = "man"
+  	b, err := json.Marshal(student)
+  	if err != nil {
+  		fmt.Println(err)
+  	}
+  	// 格式化输出
+  	b, err = json.MarshalIndent(student, "", "	")
+  	if err != nil {
+  		fmt.Println("json err ", err)
+  	}
+  	fmt.Println(string(b))
+  }
   
+  // 输出
+  $ go run .
+  {                 
+          "age": 18,
+          "name": "星河万里",
+          "sex": "man"
+  }
+  ```
+
+  - 解码json使用json.Unmarshal()函数可以对一组数据进行JSON格式的解码
+
+  ```
+      func Unmarshal(data []byte, v interface{}) error
+  ```
+
+  示例解析到结构体:
+
+  ```go
+  // 示例解析到结构体
+  func jsonStruct() {
+  	b := []byte(`{"name":"破军","introduction":"北斗第七星，有名破军。破军主破，其利天下无敢拂其锋芒，刀魂暴戾，易走偏锋","occupation":"东夷战士","estate":120}`)
+  	var e Equip
+  	err := json.Unmarshal(b, &e)
+  	if err != nil {
+  		fmt.Println(err)
+  	}
+  	// 格式化输出
+  	b, err = json.MarshalIndent(e, "", "	")
+  	if err != nil {
+  		fmt.Println("json err ", err)
+  	}
+  	fmt.Println(string(b))
+  }
+  
+  // 输出
+  $ go run main.go
+  {
+          "name": "破军",
+          "introduction": "北斗第七星，有名破军。破军主破，其利天下无敢拂其锋芒，刀魂暴戾，易走偏锋",
+          "occupation": "东夷战士",
+          "estate": 120
+  }
+  ```
+
+  示例解析到接口：
+
+  ```GO
+  // 示例解析到接口
+  func jsonInterface() {
+  	// 声明接口
+  	var i interface{}
+  	err := json.Unmarshal(b, &i)
+  	if err != nil {
+  		fmt.Println(err)
+  	}
+  	// 自动转到map
+  	fmt.Println(i)
+  	// 可以判断类型
+  	m := i.(map[string]interface{})
+  	for k, v := range m {
+  		switch vv := v.(type) {
+  		case float64:
+  			fmt.Println(k, "是float64类型", vv)
+  		case string:
+  			fmt.Println(k, "是string类型", vv)
+  		default:
+  			fmt.Println("other type", vv)
+  		}
+  	}
+  }
+  
+  // 输出
+  $ go run main.go
+  map[estate:120 introduction:北斗第七星，有名破军。破军主破，其利天下无敢拂其锋芒，刀魂暴戾，易走偏锋 name:破军 occupation:东夷战士]
+  name 是string类型 破军
+  introduction 是string类型 北斗第七星，有名破军。破军主破，其利天下无敢拂其锋芒，刀魂暴戾，易走偏锋
+  occupation 是string类型 东夷战士
+  estate 是float64类型 120
+  ```
+
+#### XML
+
+- 是可扩展标记语言，包含声明、根标签、子元素和属性
+- 应用场景：配置文件以及webService
+
+示例：
+
+```xml
+    <?xml version="1.0" encoding="UTF-8" ?>
+    <servers version="1">
+        <server>
+            <serverName>Shanghai_VPN</serverName>
+            <serverIP>127.0.0.1</serverIP>
+        </server>
+        <server>
+            <serverName>Beijing_VPN</serverName>
+            <serverIP>127.0.0.2</serverIP>
+        </server>
+    </servers>
+```
+
+```go
+// Server 抽取单个server对象
+type Server struct {
+	ServerName string `xml:"serverName"`
+	ServerIP   string `xml:"serverIP"`
+}
+
+type Servers struct {
+	Name    xml.Name `xml:"servers"`
+	Version int      `xml:"version"`
+	Servers []Server `xml:"server"`
+}
+
+func main() {
+	data, err := ioutil.ReadFile("./xml.xml")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	var servers Servers
+	err = xml.Unmarshal(data, &servers)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// 格式化输出
+	b, err := json.MarshalIndent(servers, "", "	")
+	if err != nil {
+		fmt.Println("json err ", err)
+	}
+	fmt.Println(string(b))
+}
+
+// 输出
+$ go run .
+{
+        "Name": {
+                "Space": "",
+                "Local": ""
+        },
+        "Version": 0,
+        "Servers": [
+                {
+                        "ServerName": "Shanghai_VPN",
+                        "ServerIP": "127.0.0.1"
+                },
+                {
+                        "ServerName": "Beijing_VPN",
+                        "ServerIP": "127.0.0.2"
+                }
+        ]
+}
+```
+
+#### MSGPack
+
+- MSGPack是二进制的json，性能更快，更省空间
+- 需要安装第三方包：go get -u github.com/vmihailenco/msgpack
+
+```go
+package MSGPack
+
+import (
+	"fmt"
+	"github.com/vmihailenco/msgpack"
+	"io/ioutil"
+	"math/rand"
+)
+
+type Person struct {
+	Name, Sex string
+	Age       int
+}
+
+// 二进制写出
+func writeJson(filename string) (err error) {
+	var persons []*Person
+	// 假数据
+	for i := 0; i < 10; i++ {
+		p := &Person{
+			Name: fmt.Sprintf("name%d", i),
+			Sex:  "male",
+			Age:  rand.Intn(100),
+		}
+		persons = append(persons, p)
+	}
+	// 二进制json序列化
+	data, err := msgpack.Marshal(persons)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = ioutil.WriteFile(filename, data, 0666)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	return
+}
+
+// 二进制读取
+func readJson(filename string) (err error) {
+	var persons []*Person
+	// 读文件
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// 反序列化
+	err = msgpack.Unmarshal(data, &persons)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	for _, v := range persons {
+		fmt.Printf("%#v\n", v)
+	}
+	return
+}
+
+func main() {
+	err := readJson("filepath")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
+```
 
 
 
