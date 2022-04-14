@@ -2586,6 +2586,12 @@ func main() {
   		fmt.Printf("a is other type\n")
   	}
   }
+  
+  // 输出
+  $ go run main.go
+  类型是： float64
+  float64
+  a is float64
   ```
 
 - 反射获取interface值信息
@@ -2602,11 +2608,54 @@ func main() {
   		fmt.Println("a is", v.Float())
   	}
   }
+  
+// 输出
+  $ go run main.go
+  3.141
+  float64
+  a is 3.141
+  ```
+  
+
+- 反射修改值信息
+
+  ```go
+  
+  // 反射修改值信息
+  func reflectSetValue(a interface{}) {
+  	v := reflect.ValueOf(a)
+  	k := v.Kind()
+  	switch k {
+  	case reflect.Float64:
+  		// 反射修改值
+  		v.SetFloat(5.8)
+  		fmt.Println("a is", v.Float())
+  	case reflect.Ptr:
+  		// elem()获取地址指向的值
+  		v.Elem().SetFloat(6.3)
+  		fmt.Println("case:", v.Elem().Float())
+  		// 地址
+  		fmt.Println(v.Pointer())
+  	}
+  }
+  
+  func main() {
+  	var x float64 = 3.141
+  	// 反射认为下面是指针类型 不是float64类型
+  	reflectSetValue(&x)
+  	fmt.Println("main:", x)
+  }
+  ```
+
+  #### 结构体与反射
+
+  查看类型、字段和方法
+
+  ```GO
+  
   ```
 
   
-
-
 
 
 
