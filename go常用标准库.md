@@ -2609,55 +2609,225 @@ func main() {
   	}
   }
   
-// 输出
-  $ go run main.go
-  3.141
-  float64
-  a is 3.141
-  ```
-  
+  // 输出
+    $ go run main.go
+    3.141
+    float64
+    a is 3.141
 
 - 反射修改值信息
 
   ```go
-  
-  // 反射修改值信息
-  func reflectSetValue(a interface{}) {
-  	v := reflect.ValueOf(a)
-  	k := v.Kind()
-  	switch k {
-  	case reflect.Float64:
-  		// 反射修改值
-  		v.SetFloat(5.8)
-  		fmt.Println("a is", v.Float())
-  	case reflect.Ptr:
-  		// elem()获取地址指向的值
-  		v.Elem().SetFloat(6.3)
-  		fmt.Println("case:", v.Elem().Float())
-  		// 地址
-  		fmt.Println(v.Pointer())
-  	}
-  }
-  
-  func main() {
-  	var x float64 = 3.141
-  	// 反射认为下面是指针类型 不是float64类型
-  	reflectSetValue(&x)
-  	fmt.Println("main:", x)
-  }
+    // 反射修改值信息
+    func reflectSetValue(a interface{}) {
+    	v := reflect.ValueOf(a)
+    	k := v.Kind()
+    	switch k {
+    	case reflect.Float64:
+    		// 反射修改值
+    		v.SetFloat(5.8)
+    		fmt.Println("a is", v.Float())
+    	case reflect.Ptr:
+    		// elem()获取地址指向的值
+    		v.Elem().SetFloat(6.3)
+    		fmt.Println("case:", v.Elem().Float())
+    		// 地址
+    		fmt.Println(v.Pointer())
+    	}
+    }
+    
+    func main() {
+    	var x float64 = 3.141
+    	// 反射认为下面是指针类型 不是float64类型
+    	reflectSetValue(&x)
+    	fmt.Println("main:", x)
+    }
   ```
+
+  
 
   #### 结构体与反射
 
   查看类型、字段和方法
 
   ```GO
+  type User struct {
+  	Id, Age int
+  	Name    string
+  }
   
+  // Hello 结构体方法
+  func (u User) Hello() {
+  	fmt.Println("Hello")
+  }
+  
+  // Poni 传入interface{}
+  func Poni(o interface{}) {
+  	t := reflect.TypeOf(o)
+  	fmt.Println("类型：", t)           // 类型： main.User
+  	fmt.Println("字符串类型：", t.Name()) // 字符串类型： User
+  	// 获取值
+  	v := reflect.ValueOf(o)
+  	fmt.Println(v) // {1001 40 月满轩尼诗}
+  	// 可以获取所有属性
+  	// 获取结构体字段个数：t.NameField()
+  	for i := 0; i < t.NumField(); i++ {
+  		// 取每个字段
+  		f := t.Field(i)
+  		fmt.Printf("%s : %v\n", f.Name, f.Type) // Id : int
+  		// 获取字段值信息
+  		// Interface()：获取字段对应的值
+  		value := v.Field(i).Interface()
+  		fmt.Println("value:", value) // value: 1001
+  	}
+  	fmt.Println("======================方法=====================")
+  	for i := 0; i < t.NumMethod(); i++ {
+  		m := t.Method(i)
+  		fmt.Println(m.Name) // Hello
+  		fmt.Println(m.Type)  // func(main.User)
+  	}
+  }
+  
+  func main() {
+  	user := User{1001, 40, "月满轩尼诗"}
+  	Poni(user)
+  }
+  
+  // 输出
+  $ go run main.go
+  类型： main.User
+  字符串类型： User                              
+  {1001 40 月满轩尼诗}                           
+  Id : int                                       
+  value: 1001                                    
+  Age : int                                      
+  value: 40                                      
+  Name : string                                  
+  value: 月满轩尼诗                              
+  ======================方法=====================
+  Hello
+  func(main.User)
   ```
 
-  
+  ##### 查看匿名字段
 
+```go
+func anonymousField() {
+	m := Boy{
+		User: User{1001, 40, "月满轩尼诗"},
+		Addr: "浙江省杭州市西湖区石马新村",
+	}
+	t := reflect.TypeOf(m)
+	fmt.Println(t)
+	for i := 0; i < t.NumField(); i++ {
+		// anonymous：匿名
+		fmt.Printf("%v\n", t.Field(i))
+		// 值信息
+		fmt.Printf("%v\n", reflect.ValueOf(m).Field(i))
+	}
+}
+```
 
+##### 修改结构体的值
+
+```go
+// 修改结构体的值
+func setValue(o interface{}) {
+	v := reflect.ValueOf(o)
+	// 获取指针指向的元素
+	v = v.Elem()
+	// 取字段
+	f := v.FieldByName("Name")
+	if f.Kind() == reflect.String {
+		f.SetString("wanli")
+	}
+}
+
+func main() {
+	user := User{1001, 40, "月满轩尼诗"}
+	setValue(&user)
+	fmt.Printf("%#v\n", user)
+}
+
+// 输出
+$ go run main.go
+main.User{Id:1001, Age:40, Name:"wanli"}
+```
+
+##### 调用方法
+
+```go
+// 调用方法
+func callMethods() {
+	user := User{
+		Id:   1002,
+		Age:  24,
+		Name: "仙道",
+	}
+	v := reflect.ValueOf(user)
+	// 获取方法
+	m := v.MethodByName("Run")
+	// 构建参数
+	args := []reflect.Value{reflect.ValueOf("柱子哥")}
+	// 没参数的情况下：var arg2 []reflect.Value
+	// 调用方法,需传入方法的参数
+	m.Call(args)
+}
+
+// 输出
+$ go run main.go
+仙道 想要润了
+```
+
+##### 获取字段的tag
+
+```go
+type User struct {
+	Name    string `json:"jsonName" db:"dbName"`
+	Id, Age int
+}
+
+// 获取字段tag
+func getFieldTag() {
+	var s User
+	v := reflect.ValueOf(&s)
+	// 类型
+	t := v.Type()
+	// 获取字段
+	f := t.Elem().Field(0)
+	fmt.Println(f.Tag.Get("json"))
+	fmt.Println(f.Tag.Get("db"))
+}
+
+// 输出
+$ go run main.go
+jsonName
+dbName
+```
+
+#### 反射练习
+
+- 任务：解析如下配置文件
+  - 序列化：将结构体序列化为配置文件数据并保存到硬盘
+  - 反序列化：将配置文件内容反序列化到程序的结构体
+- 配置文件有server和mysql相关配置
+
+```yaml
+#this is comment
+;this a comment
+;[]表示一个section
+[server]
+ip = 10.238.2.2
+port = 8080
+
+[mysql]
+username = root
+passwd = admin
+database = test
+host = 192.168.10.10
+port = 8000
+timeout = 1.2
+```
 
 
 
