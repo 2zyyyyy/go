@@ -2,11 +2,11 @@ package main
 
 import "fmt"
 
-// func test() {
-// 	n := 19
-// 	fmt.Println("19 % 10 =", n%10)
-// 	fmt.Println("19 / 10 =", n/10)
-// }
+func test() {
+	n := 19
+	fmt.Println("19 % 10 =", n%10)
+	fmt.Println("19 / 10 =", n/10)
+}
 
 func main() {
 	n := 199
@@ -18,7 +18,7 @@ func main() {
 		fmt.Println("n:", n)
 	}
 	fmt.Println("各位数的和sum为:", sum)
-	//test()
+	test()
 
 	s := []int{7, 2, 8, -9, 4, 0}
 	// [:] :在数字（n）前面则表示从前面开始取数 取n个 反之从后面开始取
